@@ -1,69 +1,66 @@
-/* Общие стили */
+/* ==========================================================================
+   1. ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ И СБРОС СТИЛЕЙ
+   ========================================================================== */
+:root {
+  --bg-dark: #080b13;
+  --bg-card: rgba(18, 24, 40, 0.65);
+  --bg-card-hover: rgba(26, 34, 56, 0.8);
+  --border-color: rgba(255, 255, 255, 0.08);
+  --border-glow: rgba(124, 58, 237, 0.3);
+  
+  --primary-purple: #7c3aed;
+  --primary-blue: #3b82f6;
+  --accent-cyan: #06b6d4;
+  --accent-green: #10b981;
+  --accent-red: #ef4444;
+  
+  --text-white: #ffffff;
+  --text-muted: #94a3b8;
+  --text-dim: #64748b;
+  
+  --sidebar-width: 260px;
+  --header-height: 70px;
+  
+  --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  --neon-glow: 0 0 20px rgba(124, 58, 237, 0.35);
+}
+
 * {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
-  font-family: Arial, sans-serif;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  user-select: none;
 }
 
 body {
-  background-color: #f4f4f9;
-  color: #333;
+  background-color: var(--bg-dark);
+  color: var(--text-white);
+  min-height: 100vh;
+  overflow-x: hidden;
+  background-image: 
+    radial-gradient(circle at 10% 20%, rgba(124, 58, 237, 0.12) 0%, transparent 40%),
+    radial-gradient(circle at 90% 80%, rgba(59, 130, 246, 0.1) 0%, transparent 40%);
 }
 
-/* Шапка сайта для ПК */
-header {
+/* Оболочка приложения */
+.app-container {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 15px 30px;
-  background-color: #1e1e2f;
-  color: #fff;
+  min-height: 100vh;
 }
 
-nav a {
-  color: #fff;
-  text-decoration: none;
-  margin-left: 20px;
+/* Базовые стили для стеклянных карточек */
+.glass-card {
+  background: var(--bg-card);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--border-color);
+  border-radius: 20px;
+  box-shadow: var(--glass-shadow);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.burger-btn {
-  display: none; /* Скрываем кнопку меню на ПК */
-  background: none;
-  border: none;
-  color: #fff;
-  font-size: 24px;
-  cursor: pointer;
-}
-
-.hero {
-  padding: 60px 20px;
-  text-align: center;
-}
-
-/* СТИЛИ ДЛЯ ТЕЛЕФОНОВ (экран меньше 768px) */
-@media (max-width: 768px) {
-  .burger-btn {
-    display: block; /* Показываем кнопку-бургер на мобильных */
-  }
-
-  nav {
-    display: none; /* Скрываем стандартное меню */
-    flex-direction: column;
-    position: absolute;
-    top: 60px;
-    right: 0;
-    background-color: #1e1e2f;
-    width: 100%;
-    text-align: center;
-    padding: 15px 0;
-  }
-
-  nav.active {
-    display: flex; /* Показываем меню при клике */
-  }
-
-  nav a {
-    margin: 10px 0;
-  }
+.glass-card:hover {
+  border-color: rgba(124, 58, 237, 0.3);
+  box-shadow: 0 10px 40px -10px rgba(124, 58, 237, 0.2);
 }
