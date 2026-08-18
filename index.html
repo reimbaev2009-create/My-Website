@@ -109,7 +109,165 @@
 
       <!-- Контейнер для страниц -->
       <div class="content-body" id="contentBody">
-        <!-- Сюда на следующих шагах мы вставим Страницу 1 и Страницу 2 -->
+        <!-- СТРАНИЦА 1: ГЛАВНОЕ -->
+<div id="pageHome" class="page-section active">
+
+  <!-- 1. HERO SECTION -->
+  <div class="hero-container">
+    <!-- 3D Робот -->
+    <div class="hero-robot-wrapper">
+      <div class="robot-glow"></div>
+      <img src="https://cdni.iconscout.com/illustration/premium/thumb/ai-robot-5663738-4729304.png" alt="AI Robot" class="robot-img">
+    </div>
+
+    <!-- Текст и кнопка -->
+    <div class="hero-content">
+      <h1 class="hero-title">Ваш AI помощник<br><span class="gradient-text">в мире трейдинга</span></h1>
+      <p class="hero-subtitle">
+        Получайте точные торговые сигналы, основанные на техническом анализе, машинном обучении и данных в реальном времени.
+      </p>
+      <button class="btn-primary" onclick="switchPage('signals')">
+        Перейти к сигналам <i class="fa-solid fa-arrow-right"></i>
+      </button>
+    </div>
+
+    <!-- Быстрые показатели справа -->
+    <div class="hero-stats-cards">
+      <div class="glass-card mini-stat">
+        <div class="stat-header">
+          <span class="stat-label">Точность сигналов</span>
+          <i class="fa-solid fa-chart-line stat-icon purple"></i>
+        </div>
+        <div class="stat-value" id="heroAccuracy">78.4%</div>
+      </div>
+
+      <div class="glass-card mini-stat">
+        <div class="stat-header">
+          <span class="stat-label">Всего сигналов</span>
+          <i class="fa-solid fa-layer-group stat-icon blue"></i>
+        </div>
+        <div class="stat-value" id="heroTotalSignals">1247</div>
+      </div>
+
+      <div class="glass-card mini-stat">
+        <div class="stat-header">
+          <span class="stat-label">Прибыльность</span>
+          <i class="fa-solid fa-arrow-trend-up stat-icon green"></i>
+        </div>
+        <div class="stat-value text-green" id="heroProfitability">+342.6%</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. SECTION: КАК ЭТО РАБОТАЕТ -->
+  <div class="section-wrapper">
+    <h2 class="section-title"><i class="fa-solid fa-sparkles text-purple"></i> Как это работает?</h2>
+    
+    <div class="workflow-container">
+      <div class="glass-card workflow-card">
+        <div class="step-badge">01</div>
+        <div class="workflow-icon"><i class="fa-solid fa-magnifying-glass"></i></div>
+        <h3>Анализ рынка</h3>
+        <p>AI анализирует графики, индикаторы и рыночные настроения</p>
+      </div>
+
+      <div class="workflow-line"></div>
+
+      <div class="glass-card workflow-card">
+        <div class="step-badge">02</div>
+        <div class="workflow-icon"><i class="fa-solid fa-brain"></i></div>
+        <h3>Генерация сигнала</h3>
+        <p>На основе анализа создаётся точный торговый сигнал</p>
+      </div>
+
+      <div class="workflow-line"></div>
+
+      <div class="glass-card workflow-card">
+        <div class="step-badge">03</div>
+        <div class="workflow-icon"><i class="fa-solid fa-bell"></i></div>
+        <h3>Вы получаете сигнал</h3>
+        <p>Получайте сигнал с обоснованием и статистикой</p>
+      </div>
+
+      <div class="workflow-line"></div>
+
+      <div class="glass-card workflow-card">
+        <div class="step-badge">04</div>
+        <div class="workflow-icon"><i class="fa-solid fa-chart-simple"></i></div>
+        <h3>Вы торгуете</h3>
+        <p>Используйте сигнал на Pocket Option и получайте прибыль</p>
+      </div>
+
+      <div class="workflow-line"></div>
+
+      <div class="glass-card workflow-card">
+        <div class="step-badge">05</div>
+        <div class="workflow-icon"><i class="fa-solid fa-clock-rotate-left"></i></div>
+        <h3>Статистика</h3>
+        <p>Отмечайте результат сделки и улучшайте винрейт</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. SECTION: ВАША СТАТИСТИКА -->
+  <div class="stats-dashboard-grid">
+    
+    <!-- Карточка со статистикой сделок -->
+    <div class="glass-card dashboard-card">
+      <div class="card-header-flex">
+        <h3>Ваша статистика</h3>
+        <button class="btn-text-danger" id="btnResetStats" onclick="resetUserStats()">
+          <i class="fa-solid fa-rotate-left"></i> Сброс
+        </button>
+      </div>
+
+      <div class="metrics-row">
+        <div class="metric-item">
+          <span class="metric-label">Всего сделок</span>
+          <div class="metric-value" id="statTotalTrades">87</div>
+        </div>
+
+        <div class="metric-item">
+          <span class="metric-label">Прибыльные</span>
+          <div class="metric-value text-green" id="statWins">68</div>
+        </div>
+
+        <div class="metric-item">
+          <span class="metric-label">Убыточные</span>
+          <div class="metric-value text-red" id="statLosses">19</div>
+        </div>
+
+        <div class="metric-item">
+          <span class="metric-label">Win Rate</span>
+          <div class="metric-value text-purple" id="statWinRate">78.2%</div>
+        </div>
+
+        <div class="metric-item">
+          <span class="metric-label">Прибыль</span>
+          <div class="metric-value text-green" id="statProfit">+$1,247.50</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- График Прогресса -->
+    <div class="glass-card dashboard-card chart-card">
+      <div class="card-header-flex">
+        <h3>Ваш прогресс</h3>
+        <select class="chart-period-select" id="chartPeriod" onchange="updateChartPeriod()">
+          <option value="7">7 дней</option>
+          <option value="30" selected>30 дней</option>
+          <option value="90">90 дней</option>
+          <option value="all">Всё время</option>
+        </select>
+      </div>
+      <div class="chart-wrapper">
+        <canvas id="progressChart"></canvas>
+      </div>
+    </div>
+
+  </div>
+
+</div>
       </div>
 
     </main>
