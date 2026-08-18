@@ -386,9 +386,10 @@ body {
 
 .robot-img {
   width: 100%;
-  max-width: 200px;
+  max-width: 140px;
   position: relative;
   z-index: 2;
+  filter: drop-shadow(0 0 15px rgba(124, 58, 237, 0.5));
   animation: float 4s ease-in-out infinite;
 }
 

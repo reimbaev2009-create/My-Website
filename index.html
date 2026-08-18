@@ -109,7 +109,157 @@
 
       <!-- Контейнер для страниц -->
       <div class="content-body" id="contentBody">
-        <!-- СТРАНИЦА 1: ГЛАВНОЕ -->
+        <!-- СТРАНИЦА 2: СИГНАЛЫ -->
+<div id="pageSignals" class="page-section">
+
+  <!-- 1. AI SIGNAL GENERATOR CARD -->
+  <div class="glass-card generator-card">
+    <div class="generator-header">
+      <div class="gen-title">
+        <i class="fa-solid fa-wand-magic-sparkles text-purple"></i>
+        <h2>AI Signal Generator</h2>
+      </div>
+      <span class="badge-live"><i class="fa-solid fa-circle text-green"></i> Engine Active</span>
+    </div>
+
+    <!-- Селекторы параметров -->
+    <div class="selectors-grid">
+      <div class="selector-group">
+        <label>Валютная пара</label>
+        <select id="selectPair" class="custom-select">
+          <option value="EUR/USD">EUR / USD</option>
+          <option value="GBP/USD">GBP / USD</option>
+          <option value="USD/JPY">USD / JPY</option>
+          <option value="AUD/USD">AUD / USD</option>
+          <option value="USD/CAD">USD / CAD</option>
+          <option value="EUR/JPY">EUR / JPY</option>
+        </select>
+      </div>
+
+      <div class="selector-group">
+        <label>Таймфрейм</label>
+        <div class="timeframe-buttons" id="timeframeContainer">
+          <button class="tf-btn" data-tf="1M">1M</button>
+          <button class="tf-btn active" data-tf="5M">5M</button>
+          <button class="tf-btn" data-tf="15M">15M</button>
+          <button class="tf-btn" data-tf="30M">30M</button>
+          <button class="tf-btn" data-tf="1H">1H</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Кнопка генерации -->
+    <button class="btn-generate" id="btnGenerate" onclick="startSignalGeneration()">
+      <span>GENERATE SIGNAL</span>
+      <i class="fa-solid fa-bolt"></i>
+    </button>
+  </div>
+
+  <!-- 2. ANIMATED SCANNING STATE (Анимация анализа) -->
+  <div class="glass-card scanning-card" id="scanningCard" style="display: none;">
+    <div class="scanner-spinner"></div>
+    <div class="scanner-text-wrapper">
+      <h3 id="scannerStatus">Analyzing market...</h3>
+      <p class="scanner-sub">AI алгоритм обрабатывает паттерны и индикаторы</p>
+    </div>
+  </div>
+
+  <!-- 3. SIGNAL RESULT CARD (Результат) -->
+  <div class="glass-card result-card" id="resultCard" style="display: none;">
+    <div class="result-top-bar">
+      <div>
+        <span class="res-pair" id="resPair">EUR/USD</span>
+        <span class="res-tf-badge" id="resTF">15M</span>
+      </div>
+      <div class="res-time" id="resTime">18:42:05</div>
+    </div>
+
+    <div class="result-main-grid">
+      <!-- Направление сигнала -->
+      <div class="signal-direction-box" id="signalDirBox">
+        <span class="dir-label">AI SIGNAL</span>
+        <div class="dir-value" id="resDirection">UP <i class="fa-solid fa-arrow-up"></i></div>
+      </div>
+
+      <!-- Уверенность (Confidence) -->
+      <div class="confidence-box">
+        <span class="conf-label">Confidence</span>
+        <div class="conf-value" id="resConfidence">87%</div>
+        <div class="conf-bar-bg">
+          <div class="conf-bar-fill" id="resConfBar" style="width: 87%;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Индикаторы -->
+    <div class="indicators-row">
+      <div class="ind-item">
+        <span class="ind-title">Trend</span>
+        <span class="ind-val" id="indTrend">Bullish</span>
+      </div>
+      <div class="ind-item">
+        <span class="ind-title">Momentum</span>
+        <span class="ind-val" id="indMomentum">Strong</span>
+      </div>
+      <div class="ind-item">
+        <span class="ind-title">RSI</span>
+        <span class="ind-val" id="indRSI">61.4</span>
+      </div>
+      <div class="ind-item">
+        <span class="ind-title">MACD</span>
+        <span class="ind-val text-green" id="indMACD">Positive</span>
+      </div>
+    </div>
+
+    <!-- Объяснение AI -->
+    <div class="ai-explanation-box">
+      <h4><i class="fa-solid fa-brain text-purple"></i> Почему этот сигнал?</h4>
+      <p id="resExplanation">
+        AI обнаружил бычий импульс. Цена удерживает поддержку, MACD показывает положительную динамику, а RSI находится в нейтрально-положительной зоне.
+      </p>
+    </div>
+
+    <!-- Фиксация результата сделки -->
+    <div class="trade-action-box">
+      <span>Как закончилась сделка?</span>
+      <div class="action-buttons">
+        <button class="btn-trade win" onclick="recordTradeResult('WIN')"><i class="fa-solid fa-check"></i> WIN +</button>
+        <button class="btn-trade loss" onclick="recordTradeResult('LOSS')"><i class="fa-solid fa-xmark"></i> LOSS −</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. SIGNAL HISTORY SECTION -->
+  <div class="section-wrapper" style="margin-top: 32px;">
+    <div class="history-header-flex">
+      <h2 class="section-title"><i class="fa-solid fa-clock-rotate-left text-purple"></i> История сигналов</h2>
+      <div class="history-filters" id="historyFilters">
+        <button class="filter-btn active" onclick="filterHistory('ALL')">Все</button>
+        <button class="filter-btn" onclick="filterHistory('WIN')">WIN</button>
+        <button class="filter-btn" onclick="filterHistory('LOSS')">LOSS</button>
+      </div>
+    </div>
+
+    <div class="glass-card history-table-card">
+      <table class="history-table">
+        <thead>
+          <tr>
+            <th>Время</th>
+            <th>Пара</th>
+            <th>Таймфрейм</th>
+            <th>Сигнал</th>
+            <th>Confidence</th>
+            <th>Результат</th>
+          </tr>
+        </thead>
+        <tbody id="historyTableBody">
+          <!-- Сюда динамически добавляются строки через JS -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
 <div id="pageHome" class="page-section active">
 
   <!-- 1. HERO SECTION -->
@@ -117,7 +267,7 @@
     <!-- 3D Робот -->
     <div class="hero-robot-wrapper">
       <div class="robot-glow"></div>
-      <img src="https://cdni.iconscout.com/illustration/premium/thumb/ai-robot-5663738-4729304.png" alt="AI Robot" class="robot-img">
+      <img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Smilies/Robot.png" alt="AI Robot" class="robot-img">
     </div>
 
     <!-- Текст и кнопка -->
