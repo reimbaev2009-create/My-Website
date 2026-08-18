@@ -19,9 +19,101 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
+
   <div class="app-container">
-    <!-- Здесь будет весь наш интерфейс -->
-    <h1 style="color: white; text-align: center; padding-top: 50px;">BeybarsBot Подгружается...</h1>
+    
+    <!-- 1. ЛЕВАЯ ПАНЕЛЬ (SIDEBAR) -->
+    <aside class="sidebar">
+      
+      <!-- Логотип -->
+      <div class="sidebar-brand">
+        <div class="brand-icon">
+          <i class="fa-solid fa-robot"></i>
+        </div>
+        <div class="brand-text">
+          <h2>SignalBot</h2>
+          <span>AI Trading Assistant</span>
+        </div>
+      </div>
+
+      <!-- Главная Навигация -->
+      <nav class="sidebar-nav">
+        <button class="nav-btn active" id="btnNavHome" onclick="switchPage('home')">
+          <i class="fa-solid fa-house"></i>
+          <span>Главное</span>
+        </button>
+        
+        <button class="nav-btn" id="btnNavSignals" onclick="switchPage('signals')">
+          <i class="fa-solid fa-chart-line"></i>
+          <span>Сигналы</span>
+        </button>
+      </nav>
+
+      <!-- Информационные блоки снизу -->
+      <div class="sidebar-footer">
+        
+        <!-- Статус бота -->
+        <div class="status-card glass-card">
+          <div class="status-indicator online"></div>
+          <div class="status-info">
+            <span class="status-title">AI Bot Online</span>
+            <span class="status-sub">Готов к анализу рынка</span>
+          </div>
+        </div>
+
+        <!-- Тариф Pro -->
+        <div class="pro-card glass-card">
+          <div class="pro-header">
+            <i class="fa-solid fa-crown"></i>
+            <span>Pro Plan</span>
+          </div>
+          <p class="pro-date">Активен до 01.06.2027</p>
+        </div>
+
+        <!-- Настройки -->
+        <button class="settings-btn">
+          <i class="fa-solid fa-gear"></i>
+          <span>Настройки</span>
+        </button>
+
+      </div>
+    </aside>
+
+    <!-- 2. ОСНОВНАЯ ОБЛАСТЬ (MAIN CONTENT) -->
+    <main class="main-content">
+      
+      <!-- Верхний Хедер -->
+      <header class="top-header">
+        <div class="header-nav-preview">
+          <!-- Заголовок активного раздела -->
+          <h1 id="pageTitle">Главное</h1>
+        </div>
+
+        <div class="header-user">
+          <button class="icon-btn">
+            <i class="fa-regular fa-bell"></i>
+          </button>
+          
+          <div class="user-profile">
+            <div class="user-avatar">
+              <i class="fa-solid fa-user"></i>
+            </div>
+            <div class="user-info">
+              <span class="user-name">Anisa</span>
+              <span class="user-badge">Pro Plan</span>
+            </div>
+            <i class="fa-solid fa-chevron-down arrow-icon"></i>
+          </div>
+        </div>
+      </header>
+
+      <!-- Контейнер для страниц -->
+      <div class="content-body" id="contentBody">
+        <!-- Сюда на следующих шагах мы вставим Страницу 1 и Страницу 2 -->
+      </div>
+
+    </main>
+
   </div>
 
   <script src="script.js"></script>
