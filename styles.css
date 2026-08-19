@@ -525,3 +525,139 @@ body {
   .hero-card { flex-direction: column; align-items: flex-start; gap: 16px; }
   .top-header { flex-direction: column; align-items: flex-start; gap: 12px; }
 }
+/* ==========================================================================
+   FULL RESPONSIVE SYSTEM (TABLETS & MOBILE)
+   ========================================================================== */
+
+/* Предотвращение вылезания изображений и элементов за пределы экрана */
+img, svg, canvas {
+  max-width: 100%;
+  height: auto;
+}
+
+/* 1. ПЛАНШЕТЫ (ширина до 1024px) */
+@media (max-width: 1024px) {
+  .sidebar {
+    width: 210px;
+    padding: 20px 12px;
+  }
+
+  .main-content {
+    padding: 20px;
+  }
+
+  .stats-grid-4, 
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* 2. ТЕЛЕФОНЫ (ширина до 768px) */
+@media (max-width: 768px) {
+  .app-container {
+    flex-direction: column;
+  }
+
+  /* Сайдбар превращается в верхнюю панель */
+  .sidebar {
+    width: 100%;
+    border-right: none;
+    border-bottom: 1px solid var(--panel-border);
+    padding: 16px;
+  }
+
+  .brand {
+    margin-bottom: 16px;
+  }
+
+  /* Навигация переходит в горизонтальный скролл */
+  .nav-menu {
+    flex-direction: row;
+    overflow-x: auto;
+    padding-bottom: 6px;
+    gap: 8px;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .nav-btn {
+    white-space: nowrap;
+    padding: 10px 14px;
+    font-size: 13px;
+  }
+
+  .nav-btn.active {
+    border-left: none;
+    border-bottom: 3px solid var(--accent-purple);
+  }
+
+  .sidebar-footer {
+    display: none; /* Скрываем статус для экономии места на мобильных */
+  }
+
+  /* Основной контент */
+  .main-content {
+    padding: 16px;
+    gap: 16px;
+  }
+
+  .top-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .top-nav {
+    width: 100%;
+    overflow-x: auto;
+    gap: 16px;
+    padding-bottom: 4px;
+  }
+
+  .asset-selector-wrapper {
+    max-width: 100%;
+  }
+
+  .hero-card {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 20px;
+    gap: 16px;
+  }
+}
+
+/* 3. МАЛЕНЬКИЕ ЭКРАНЫ ТЕЛЕФОНОВ (ширина до 480px) */
+@media (max-width: 480px) {
+  .main-content {
+    padding: 12px;
+  }
+
+  /* Карточки статистики строятся в 1 колонку */
+  .stats-grid-4, 
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .signal-type-badge {
+    font-size: 22px;
+    padding: 8px 20px;
+    width: 100%;
+  }
+
+  .result-btn-row {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .btn-result {
+    width: 100%;
+  }
+
+  .modal-content {
+    padding: 20px;
+    width: 95%;
+  }
+
+  .pnl-options {
+    flex-direction: column;
+  }
+}
