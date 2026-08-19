@@ -1,429 +1,824 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>BeybarsBot — AI Trading Assistant</title>
-  
-  <!-- Шрифт Inter -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-  
-  <!-- Иконки FontAwesome -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  
-  <!-- Библиотека графиков Chart.js -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <link rel="stylesheet" href="style.css">
+    <title>BeybarsBot — AI Trading Assistant</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="styles.css">
 </head>
+
 <body>
 
-  <div class="app-container">
-    
-    <!-- 1. ЛЕВАЯ ПАНЕЛЬ (SIDEBAR) -->
+<div class="app">
+
+    <!-- SIDEBAR -->
     <aside class="sidebar">
-      
-      <!-- Логотип -->
-      <div class="sidebar-brand">
-        <div class="brand-icon">
-          <i class="fa-solid fa-robot"></i>
-        </div>
-        <div class="brand-text">
-          <h2>SignalBot</h2>
-          <span>AI Trading Assistant</span>
-        </div>
-      </div>
 
-      <!-- Главная Навигация -->
-      <nav class="sidebar-nav">
-        <button class="nav-btn active" id="btnNavHome" onclick="switchPage('home')">
-          <i class="fa-solid fa-house"></i>
-          <span>Главное</span>
-        </button>
-        
-        <button class="nav-btn" id="btnNavSignals" onclick="switchPage('signals')">
-          <i class="fa-solid fa-chart-line"></i>
-          <span>Сигналы</span>
-        </button>
-      </nav>
+        <div class="brand">
+            <div class="brand-logo">
+                <span>✦</span>
+            </div>
 
-      <!-- Информационные блоки снизу -->
-      <div class="sidebar-footer">
-        
-        <!-- Статус бота -->
-        <div class="status-card glass-card">
-          <div class="status-indicator online"></div>
-          <div class="status-info">
-            <span class="status-title">AI Bot Online</span>
-            <span class="status-sub">Готов к анализу рынка</span>
-          </div>
+            <div>
+                <div class="brand-name">BeybarsBot</div>
+                <div class="brand-subtitle">AI Trading Assistant</div>
+            </div>
         </div>
 
-        <!-- Тариф Pro -->
-        <div class="pro-card glass-card">
-          <div class="pro-header">
-            <i class="fa-solid fa-crown"></i>
-            <span>Pro Plan</span>
-          </div>
-          <p class="pro-date">Активен до 01.06.2027</p>
+        <nav class="navigation">
+
+            <button class="nav-item active" data-page="dashboard">
+                <span class="nav-icon">⌂</span>
+                <span>Главная</span>
+            </button>
+
+            <button class="nav-item" data-page="signals">
+                <span class="nav-icon">⌁</span>
+                <span>Сигналы</span>
+                <span class="nav-badge">12</span>
+            </button>
+
+            <button class="nav-item" data-page="statistics">
+                <span class="nav-icon">◫</span>
+                <span>Статистика</span>
+            </button>
+
+            <button class="nav-item" data-page="settings">
+                <span class="nav-icon">⚙</span>
+                <span>Настройки</span>
+            </button>
+
+        </nav>
+
+        <div class="sidebar-bottom">
+
+            <div class="bot-status">
+                <div class="status-dot"></div>
+
+                <div>
+                    <strong>AI Bot Online</strong>
+                    <span>Готов к анализу рынка</span>
+                </div>
+            </div>
+
+            <div class="plan-card">
+                <div class="plan-icon">♛</div>
+
+                <div>
+                    <strong>Pro Plan</strong>
+                    <span>Активен до 01.06.2027</span>
+                </div>
+            </div>
+
         </div>
 
-        <!-- Настройки -->
-        <button class="settings-btn">
-          <i class="fa-solid fa-gear"></i>
-          <span>Настройки</span>
-        </button>
-
-      </div>
     </aside>
 
-    <!-- 2. ОСНОВНАЯ ОБЛАСТЬ (MAIN CONTENT) -->
-    <main class="main-content">
-      
-      <!-- Верхний Хедер -->
-      <header class="top-header">
-        <div class="header-nav-preview">
-          <!-- Заголовок активного раздела -->
-          <h1 id="pageTitle">Главное</h1>
-        </div>
 
-        <div class="header-user">
-          <button class="icon-btn">
-            <i class="fa-regular fa-bell"></i>
-          </button>
-          
-          <div class="user-profile">
-            <div class="user-avatar">
-              <i class="fa-solid fa-user"></i>
+    <!-- MAIN -->
+    <main class="main">
+
+        <!-- TOPBAR -->
+        <header class="topbar">
+
+            <div class="mobile-brand">
+                Beybars<span>Bot</span>
             </div>
-            <div class="user-info">
-              <span class="user-name">Anisa</span>
-              <span class="user-badge">Pro Plan</span>
+
+            <div class="topbar-right">
+
+                <button class="icon-button" id="notificationBtn">
+                    ♧
+                    <span class="notification-dot"></span>
+                </button>
+
+                <div class="profile" id="profileButton">
+
+                    <div class="avatar">B</div>
+
+                    <div class="profile-info">
+                        <strong>Beybars</strong>
+                        <span>Pro Plan</span>
+                    </div>
+
+                    <span class="profile-arrow">⌄</span>
+
+                </div>
+
             </div>
-            <i class="fa-solid fa-chevron-down arrow-icon"></i>
-          </div>
+
+        </header>
+
+
+        <!-- CONTENT -->
+        <div class="content">
+
+            <!-- ================= DASHBOARD ================= -->
+
+            <section class="page active" id="dashboard">
+
+                <div class="hero">
+
+                    <div class="hero-content">
+
+                        <div class="eyebrow">
+                            <span class="pulse"></span>
+                            AI MARKET INTELLIGENCE
+                        </div>
+
+                        <h1>
+                            Ваш AI-помощник
+                            <span>в мире трейдинга</span>
+                        </h1>
+
+                        <p>
+                            Получайте торговые сигналы на основе
+                            технического анализа, машинного обучения
+                            и данных рынка в реальном времени.
+                        </p>
+
+                        <button class="primary-button" data-page-link="signals">
+                            Перейти к сигналам
+                            <span>→</span>
+                        </button>
+
+                    </div>
+
+
+                    <!-- ROBOT -->
+                    <div class="robot-area">
+
+                        <div class="orbit orbit-one"></div>
+                        <div class="orbit orbit-two"></div>
+
+                        <div class="robot-glow"></div>
+
+                        <div class="robot">
+
+                            <div class="robot-head">
+
+                                <div class="ear left"></div>
+                                <div class="ear right"></div>
+
+                                <div class="robot-face">
+
+                                    <div class="eye left-eye"></div>
+                                    <div class="eye right-eye"></div>
+
+                                    <div class="robot-smile"></div>
+
+                                </div>
+
+                            </div>
+
+                            <div class="robot-body">
+
+                                <div class="robot-chest">
+                                    ✦
+                                </div>
+
+                                <div class="arm left-arm"></div>
+                                <div class="arm right-arm"></div>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <!-- QUICK STATS -->
+
+                <div class="quick-stats">
+
+                    <div class="stat-card">
+
+                        <div class="stat-top">
+                            <span>Точность сигналов</span>
+                            <div class="stat-icon blue">↗</div>
+                        </div>
+
+                        <strong>78.4%</strong>
+
+                        <div class="progress">
+                            <div style="width:78.4%"></div>
+                        </div>
+
+                        <small>+4.2% за последние 30 дней</small>
+
+                    </div>
+
+
+                    <div class="stat-card">
+
+                        <div class="stat-top">
+                            <span>Всего сигналов</span>
+                            <div class="stat-icon purple">◈</div>
+                        </div>
+
+                        <strong>1,247</strong>
+
+                        <small class="green-text">↑ 18.6% в этом месяце</small>
+
+                    </div>
+
+
+                    <div class="stat-card">
+
+                        <div class="stat-top">
+                            <span>Прибыльность</span>
+                            <div class="stat-icon blue">⌁</div>
+                        </div>
+
+                        <strong class="green-text">+342.6%</strong>
+
+                        <small>Средний результат</small>
+
+                    </div>
+
+                </div>
+
+
+                <!-- HOW IT WORKS -->
+
+                <div class="section-card">
+
+                    <div class="section-title">
+                        <div class="title-icon">✦</div>
+
+                        <div>
+                            <h2>Как это работает?</h2>
+                            <p>BeybarsBot анализирует рынок за вас</p>
+                        </div>
+                    </div>
+
+
+                    <div class="steps">
+
+                        <div class="step">
+
+                            <div class="step-number">01</div>
+
+                            <div class="step-icon">⌁</div>
+
+                            <h3>Анализ рынка</h3>
+
+                            <p>
+                                AI анализирует графики,
+                                индикаторы и рыночные настроения.
+                            </p>
+
+                        </div>
+
+
+                        <div class="step">
+
+                            <div class="step-number">02</div>
+
+                            <div class="step-icon">◈</div>
+
+                            <h3>Генерация сигнала</h3>
+
+                            <p>
+                                На основе анализа создаётся
+                                точный торговый сигнал.
+                            </p>
+
+                        </div>
+
+
+                        <div class="step">
+
+                            <div class="step-number">03</div>
+
+                            <div class="step-icon">♧</div>
+
+                            <h3>Вы получаете сигнал</h3>
+
+                            <p>
+                                Получайте сигнал с объяснением
+                                и оценкой вероятности.
+                            </p>
+
+                        </div>
+
+
+                        <div class="step">
+
+                            <div class="step-number">04</div>
+
+                            <div class="step-icon">↗</div>
+
+                            <h3>Вы торгуете</h3>
+
+                            <p>
+                                Используйте сигнал для принятия
+                                собственного торгового решения.
+                            </p>
+
+                        </div>
+
+
+                        <div class="step">
+
+                            <div class="step-number">05</div>
+
+                            <div class="step-icon">◴</div>
+
+                            <h3>Статистика</h3>
+
+                            <p>
+                                Отмечайте результат сделки
+                                и улучшайте свою статистику.
+                            </p>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <!-- USER STATISTICS -->
+
+                <div class="bottom-grid">
+
+                    <div class="section-card user-statistics">
+
+                        <div class="card-heading">
+                            <div>
+                                <h2>Ваша статистика</h2>
+                                <p>Результаты ваших сделок</p>
+                            </div>
+
+                            <button class="ghost-button" data-page-link="statistics">
+                                Подробнее →
+                            </button>
+                        </div>
+
+
+                        <div class="personal-stats">
+
+                            <div>
+                                <span>Всего сделок</span>
+                                <strong>87</strong>
+                            </div>
+
+                            <div>
+                                <span>Прибыльные</span>
+                                <strong class="green-text">68</strong>
+                            </div>
+
+                            <div>
+                                <span>Убыточные</span>
+                                <strong class="red-text">19</strong>
+                            </div>
+
+                            <div>
+                                <span>Win Rate</span>
+                                <strong class="purple-text">78.2%</strong>
+                            </div>
+
+                            <div>
+                                <span>Прибыль</span>
+                                <strong class="green-text">+$1,247</strong>
+                            </div>
+
+                        </div>
+
+                    </div>
+
+
+                    <!-- CHART -->
+
+                    <div class="section-card chart-card">
+
+                        <div class="card-heading">
+
+                            <div>
+                                <h2>Ваш прогресс</h2>
+                                <p>Последние 30 дней</p>
+                            </div>
+
+                            <select>
+                                <option>30 дней</option>
+                                <option>7 дней</option>
+                                <option>90 дней</option>
+                            </select>
+
+                        </div>
+
+                        <div class="chart">
+
+                            <div class="chart-value">+$1,247.50</div>
+
+                            <svg viewBox="0 0 500 180" preserveAspectRatio="none">
+
+                                <defs>
+                                    <linearGradient id="chartGradient" x1="0" x2="0" y1="0" y2="1">
+                                        <stop offset="0%" stop-color="#7c4dff" stop-opacity=".35"/>
+                                        <stop offset="100%" stop-color="#7c4dff" stop-opacity="0"/>
+                                    </linearGradient>
+                                </defs>
+
+                                <path
+                                    class="chart-fill"
+                                    d="M0 155
+                                    C35 150, 40 125, 70 140
+                                    S110 120, 135 128
+                                    S160 100, 185 118
+                                    S215 105, 235 112
+                                    S265 75, 290 92
+                                    S320 100, 340 72
+                                    S365 82, 385 62
+                                    S420 70, 440 48
+                                    S470 60, 500 28
+                                    L500 180 L0 180 Z"
+                                />
+
+                                <path
+                                    class="chart-line"
+                                    d="M0 155
+                                    C35 150, 40 125, 70 140
+                                    S110 120, 135 128
+                                    S160 100, 185 118
+                                    S215 105, 235 112
+                                    S265 75, 290 92
+                                    S320 100, 340 72
+                                    S365 82, 385 62
+                                    S420 70, 440 48
+                                    S470 60, 500 28"
+                                />
+
+                            </svg>
+
+                            <div class="chart-labels">
+                                <span>18 Apr</span>
+                                <span>25 Apr</span>
+                                <span>2 May</span>
+                                <span>9 May</span>
+                                <span>16 May</span>
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </section>
+
+
+            <!-- ================= SIGNALS ================= -->
+
+            <section class="page" id="signals">
+
+                <div class="page-header">
+
+                    <div>
+                        <div class="eyebrow">AI SIGNAL CENTER</div>
+                        <h1>Торговые сигналы</h1>
+                        <p>
+                            Сигналы, сформированные AI-анализом рынка.
+                        </p>
+                    </div>
+
+                    <div class="live-indicator">
+                        <span></span>
+                        LIVE MARKET
+                    </div>
+
+                </div>
+
+
+                <div class="signal-toolbar">
+
+                    <button class="filter active">Все</button>
+                    <button class="filter">Forex</button>
+                    <button class="filter">Crypto</button>
+                    <button class="filter">Stocks</button>
+
+                </div>
+
+
+                <div class="signals-list">
+
+                    <div class="signal-card">
+
+                        <div class="asset">
+                            <div class="asset-icon">₿</div>
+
+                            <div>
+                                <strong>BTC / USDT</strong>
+                                <span>Bitcoin</span>
+                            </div>
+                        </div>
+
+                        <div class="signal-direction buy">
+                            <strong>BUY</strong>
+                            <span>Покупка</span>
+                        </div>
+
+                        <div>
+                            <span class="label">Точность</span>
+                            <strong>91.4%</strong>
+                        </div>
+
+                        <div>
+                            <span class="label">Цена входа</span>
+                            <strong>$116,420</strong>
+                        </div>
+
+                        <div class="signal-time">
+                            12:48
+                            <span>сейчас</span>
+                        </div>
+
+                        <button class="signal-button">Открыть →</button>
+
+                    </div>
+
+
+                    <div class="signal-card">
+
+                        <div class="asset">
+                            <div class="asset-icon">€</div>
+
+                            <div>
+                                <strong>EUR / USD</strong>
+                                <span>Forex</span>
+                            </div>
+                        </div>
+
+                        <div class="signal-direction sell">
+                            <strong>SELL</strong>
+                            <span>Продажа</span>
+                        </div>
+
+                        <div>
+                            <span class="label">Точность</span>
+                            <strong>86.7%</strong>
+                        </div>
+
+                        <div>
+                            <span class="label">Цена входа</span>
+                            <strong>1.1684</strong>
+                        </div>
+
+                        <div class="signal-time">
+                            12:42
+                            <span>6 мин назад</span>
+                        </div>
+
+                        <button class="signal-button">Открыть →</button>
+
+                    </div>
+
+
+                    <div class="signal-card">
+
+                        <div class="asset">
+                            <div class="asset-icon">Ξ</div>
+
+                            <div>
+                                <strong>ETH / USDT</strong>
+                                <span>Ethereum</span>
+                            </div>
+                        </div>
+
+                        <div class="signal-direction buy">
+                            <strong>BUY</strong>
+                            <span>Покупка</span>
+                        </div>
+
+                        <div>
+                            <span class="label">Точность</span>
+                            <strong>83.9%</strong>
+                        </div>
+
+                        <div>
+                            <span class="label">Цена входа</span>
+                            <strong>$4,520</strong>
+                        </div>
+
+                        <div class="signal-time">
+                            12:31
+                            <span>17 мин назад</span>
+                        </div>
+
+                        <button class="signal-button">Открыть →</button>
+
+                    </div>
+
+                </div>
+
+            </section>
+
+
+            <!-- ================= STATISTICS ================= -->
+
+            <section class="page" id="statistics">
+
+                <div class="page-header">
+
+                    <div>
+                        <div class="eyebrow">PERFORMANCE</div>
+                        <h1>Статистика</h1>
+                        <p>Анализ вашей торговой активности.</p>
+                    </div>
+
+                </div>
+
+
+                <div class="statistics-grid">
+
+                    <div class="big-stat">
+                        <span>Win Rate</span>
+                        <strong>78.2%</strong>
+                        <small class="green-text">+5.4% за месяц</small>
+                    </div>
+
+                    <div class="big-stat">
+                        <span>Прибыль</span>
+                        <strong class="green-text">+$1,247</strong>
+                        <small>За последние 30 дней</small>
+                    </div>
+
+                    <div class="big-stat">
+                        <span>Сделки</span>
+                        <strong>87</strong>
+                        <small>68 прибыльных</small>
+                    </div>
+
+                    <div class="big-stat">
+                        <span>Средняя сделка</span>
+                        <strong>+$14.33</strong>
+                        <small class="green-text">Положительный результат</small>
+                    </div>
+
+                </div>
+
+
+                <div class="section-card large-chart">
+
+                    <div class="card-heading">
+
+                        <div>
+                            <h2>Динамика прибыли</h2>
+                            <p>История результатов</p>
+                        </div>
+
+                        <select>
+                            <option>30 дней</option>
+                            <option>90 дней</option>
+                            <option>1 год</option>
+                        </select>
+
+                    </div>
+
+                    <div class="big-chart">
+
+                        <svg viewBox="0 0 900 300" preserveAspectRatio="none">
+
+                            <defs>
+                                <linearGradient id="bigGradient" x1="0" x2="0" y1="0" y2="1">
+                                    <stop offset="0%" stop-color="#7c4dff" stop-opacity=".3"/>
+                                    <stop offset="100%" stop-color="#7c4dff" stop-opacity="0"/>
+                                </linearGradient>
+                            </defs>
+
+                            <path
+                                class="chart-fill"
+                                d="M0 270
+                                C80 250, 100 220, 150 240
+                                S230 190, 270 205
+                                S330 170, 380 185
+                                S440 130, 500 155
+                                S560 140, 610 120
+                                S670 100, 720 125
+                                S780 70, 830 90
+                                S870 50, 900 25
+                                L900 300 L0 300 Z"
+                            />
+
+                            <path
+                                class="chart-line"
+                                d="M0 270
+                                C80 250, 100 220, 150 240
+                                S230 190, 270 205
+                                S330 170, 380 185
+                                S440 130, 500 155
+                                S560 140, 610 120
+                                S670 100, 720 125
+                                S780 70, 830 90
+                                S870 50, 900 25"
+                            />
+
+                        </svg>
+
+                    </div>
+
+                </div>
+
+            </section>
+
+
+            <!-- ================= SETTINGS ================= -->
+
+            <section class="page" id="settings">
+
+                <div class="page-header">
+
+                    <div>
+                        <div class="eyebrow">SYSTEM</div>
+                        <h1>Настройки</h1>
+                        <p>Настройте BeybarsBot под себя.</p>
+                    </div>
+
+                </div>
+
+
+                <div class="settings-grid">
+
+                    <div class="section-card settings-card">
+
+                        <h2>Профиль</h2>
+
+                        <div class="form-group">
+                            <label>Имя пользователя</label>
+                            <input type="text" value="Beybars">
+                        </div>
+
+                        <div class="form-group">
+                            <label>Email</label>
+                            <input type="email" value="user@example.com">
+                        </div>
+
+                        <button class="primary-button">
+                            Сохранить изменения
+                        </button>
+
+                    </div>
+
+
+                    <div class="section-card settings-card">
+
+                        <h2>Уведомления</h2>
+
+                        <div class="setting-row">
+                            <div>
+                                <strong>Новые сигналы</strong>
+                                <span>Получать уведомления о новых сигналах</span>
+                            </div>
+
+                            <label class="switch">
+                                <input type="checkbox" checked>
+                                <span></span>
+                            </label>
+                        </div>
+
+
+                        <div class="setting-row">
+                            <div>
+                                <strong>Результаты сделок</strong>
+                                <span>Уведомлять о завершении сигнала</span>
+                            </div>
+
+                            <label class="switch">
+                                <input type="checkbox" checked>
+                                <span></span>
+                            </label>
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </section>
+
         </div>
-      </header>
-
-      <!-- Контейнер для страниц -->
-      <div class="content-body" id="contentBody">
-        <!-- СТРАНИЦА 2: СИГНАЛЫ -->
-<div id="pageSignals" class="page-section">
-
-  <!-- 1. AI SIGNAL GENERATOR CARD -->
-  <div class="glass-card generator-card">
-    <div class="generator-header">
-      <div class="gen-title">
-        <i class="fa-solid fa-wand-magic-sparkles text-purple"></i>
-        <h2>AI Signal Generator</h2>
-      </div>
-      <span class="badge-live"><i class="fa-solid fa-circle text-green"></i> Engine Active</span>
-    </div>
-
-    <!-- Селекторы параметров -->
-    <div class="selectors-grid">
-      <div class="selector-group">
-        <label>Валютная пара</label>
-        <select id="selectPair" class="custom-select">
-          <option value="EUR/USD">EUR / USD</option>
-          <option value="GBP/USD">GBP / USD</option>
-          <option value="USD/JPY">USD / JPY</option>
-          <option value="AUD/USD">AUD / USD</option>
-          <option value="USD/CAD">USD / CAD</option>
-          <option value="EUR/JPY">EUR / JPY</option>
-        </select>
-      </div>
-
-      <div class="selector-group">
-        <label>Таймфрейм</label>
-        <div class="timeframe-buttons" id="timeframeContainer">
-          <button class="tf-btn" data-tf="1M">1M</button>
-          <button class="tf-btn active" data-tf="5M">5M</button>
-          <button class="tf-btn" data-tf="15M">15M</button>
-          <button class="tf-btn" data-tf="30M">30M</button>
-          <button class="tf-btn" data-tf="1H">1H</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Кнопка генерации -->
-    <button class="btn-generate" id="btnGenerate" onclick="startSignalGeneration()">
-      <span>GENERATE SIGNAL</span>
-      <i class="fa-solid fa-bolt"></i>
-    </button>
-  </div>
-
-  <!-- 2. ANIMATED SCANNING STATE (Анимация анализа) -->
-  <div class="glass-card scanning-card" id="scanningCard" style="display: none;">
-    <div class="scanner-spinner"></div>
-    <div class="scanner-text-wrapper">
-      <h3 id="scannerStatus">Analyzing market...</h3>
-      <p class="scanner-sub">AI алгоритм обрабатывает паттерны и индикаторы</p>
-    </div>
-  </div>
-
-  <!-- 3. SIGNAL RESULT CARD (Результат) -->
-  <div class="glass-card result-card" id="resultCard" style="display: none;">
-    <div class="result-top-bar">
-      <div>
-        <span class="res-pair" id="resPair">EUR/USD</span>
-        <span class="res-tf-badge" id="resTF">15M</span>
-      </div>
-      <div class="res-time" id="resTime">18:42:05</div>
-    </div>
-
-    <div class="result-main-grid">
-      <!-- Направление сигнала -->
-      <div class="signal-direction-box" id="signalDirBox">
-        <span class="dir-label">AI SIGNAL</span>
-        <div class="dir-value" id="resDirection">UP <i class="fa-solid fa-arrow-up"></i></div>
-      </div>
-
-      <!-- Уверенность (Confidence) -->
-      <div class="confidence-box">
-        <span class="conf-label">Confidence</span>
-        <div class="conf-value" id="resConfidence">87%</div>
-        <div class="conf-bar-bg">
-          <div class="conf-bar-fill" id="resConfBar" style="width: 87%;"></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Индикаторы -->
-    <div class="indicators-row">
-      <div class="ind-item">
-        <span class="ind-title">Trend</span>
-        <span class="ind-val" id="indTrend">Bullish</span>
-      </div>
-      <div class="ind-item">
-        <span class="ind-title">Momentum</span>
-        <span class="ind-val" id="indMomentum">Strong</span>
-      </div>
-      <div class="ind-item">
-        <span class="ind-title">RSI</span>
-        <span class="ind-val" id="indRSI">61.4</span>
-      </div>
-      <div class="ind-item">
-        <span class="ind-title">MACD</span>
-        <span class="ind-val text-green" id="indMACD">Positive</span>
-      </div>
-    </div>
-
-    <!-- Объяснение AI -->
-    <div class="ai-explanation-box">
-      <h4><i class="fa-solid fa-brain text-purple"></i> Почему этот сигнал?</h4>
-      <p id="resExplanation">
-        AI обнаружил бычий импульс. Цена удерживает поддержку, MACD показывает положительную динамику, а RSI находится в нейтрально-положительной зоне.
-      </p>
-    </div>
-
-    <!-- Фиксация результата сделки -->
-    <div class="trade-action-box">
-      <span>Как закончилась сделка?</span>
-      <div class="action-buttons">
-        <button class="btn-trade win" onclick="recordTradeResult('WIN')"><i class="fa-solid fa-check"></i> WIN +</button>
-        <button class="btn-trade loss" onclick="recordTradeResult('LOSS')"><i class="fa-solid fa-xmark"></i> LOSS −</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- 4. SIGNAL HISTORY SECTION -->
-  <div class="section-wrapper" style="margin-top: 32px;">
-    <div class="history-header-flex">
-      <h2 class="section-title"><i class="fa-solid fa-clock-rotate-left text-purple"></i> История сигналов</h2>
-      <div class="history-filters" id="historyFilters">
-        <button class="filter-btn active" onclick="filterHistory('ALL')">Все</button>
-        <button class="filter-btn" onclick="filterHistory('WIN')">WIN</button>
-        <button class="filter-btn" onclick="filterHistory('LOSS')">LOSS</button>
-      </div>
-    </div>
-
-    <div class="glass-card history-table-card">
-      <table class="history-table">
-        <thead>
-          <tr>
-            <th>Время</th>
-            <th>Пара</th>
-            <th>Таймфрейм</th>
-            <th>Сигнал</th>
-            <th>Confidence</th>
-            <th>Результат</th>
-          </tr>
-        </thead>
-        <tbody id="historyTableBody">
-          <!-- Сюда динамически добавляются строки через JS -->
-        </tbody>
-      </table>
-    </div>
-  </div>
-
-</div>
-<div id="pageHome" class="page-section active">
-
-  <!-- 1. HERO SECTION -->
-  <div class="hero-container">
-    <!-- 3D Робот -->
-    <div class="hero-robot-wrapper">
-      <div class="robot-glow"></div>
-      <img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Smilies/Robot.png" alt="AI Robot" class="robot-img">
-    </div>
-
-    <!-- Текст и кнопка -->
-    <div class="hero-content">
-      <h1 class="hero-title">Ваш AI помощник<br><span class="gradient-text">в мире трейдинга</span></h1>
-      <p class="hero-subtitle">
-        Получайте точные торговые сигналы, основанные на техническом анализе, машинном обучении и данных в реальном времени.
-      </p>
-      <button class="btn-primary" onclick="switchPage('signals')">
-        Перейти к сигналам <i class="fa-solid fa-arrow-right"></i>
-      </button>
-    </div>
-
-    <!-- Быстрые показатели справа -->
-    <div class="hero-stats-cards">
-      <div class="glass-card mini-stat">
-        <div class="stat-header">
-          <span class="stat-label">Точность сигналов</span>
-          <i class="fa-solid fa-chart-line stat-icon purple"></i>
-        </div>
-        <div class="stat-value" id="heroAccuracy">78.4%</div>
-      </div>
-
-      <div class="glass-card mini-stat">
-        <div class="stat-header">
-          <span class="stat-label">Всего сигналов</span>
-          <i class="fa-solid fa-layer-group stat-icon blue"></i>
-        </div>
-        <div class="stat-value" id="heroTotalSignals">1247</div>
-      </div>
-
-      <div class="glass-card mini-stat">
-        <div class="stat-header">
-          <span class="stat-label">Прибыльность</span>
-          <i class="fa-solid fa-arrow-trend-up stat-icon green"></i>
-        </div>
-        <div class="stat-value text-green" id="heroProfitability">+342.6%</div>
-      </div>
-    </div>
-  </div>
-
-  <!-- 2. SECTION: КАК ЭТО РАБОТАЕТ -->
-  <div class="section-wrapper">
-    <h2 class="section-title"><i class="fa-solid fa-sparkles text-purple"></i> Как это работает?</h2>
-    
-    <div class="workflow-container">
-      <div class="glass-card workflow-card">
-        <div class="step-badge">01</div>
-        <div class="workflow-icon"><i class="fa-solid fa-magnifying-glass"></i></div>
-        <h3>Анализ рынка</h3>
-        <p>AI анализирует графики, индикаторы и рыночные настроения</p>
-      </div>
-
-      <div class="workflow-line"></div>
-
-      <div class="glass-card workflow-card">
-        <div class="step-badge">02</div>
-        <div class="workflow-icon"><i class="fa-solid fa-brain"></i></div>
-        <h3>Генерация сигнала</h3>
-        <p>На основе анализа создаётся точный торговый сигнал</p>
-      </div>
-
-      <div class="workflow-line"></div>
-
-      <div class="glass-card workflow-card">
-        <div class="step-badge">03</div>
-        <div class="workflow-icon"><i class="fa-solid fa-bell"></i></div>
-        <h3>Вы получаете сигнал</h3>
-        <p>Получайте сигнал с обоснованием и статистикой</p>
-      </div>
-
-      <div class="workflow-line"></div>
-
-      <div class="glass-card workflow-card">
-        <div class="step-badge">04</div>
-        <div class="workflow-icon"><i class="fa-solid fa-chart-simple"></i></div>
-        <h3>Вы торгуете</h3>
-        <p>Используйте сигнал на Pocket Option и получайте прибыль</p>
-      </div>
-
-      <div class="workflow-line"></div>
-
-      <div class="glass-card workflow-card">
-        <div class="step-badge">05</div>
-        <div class="workflow-icon"><i class="fa-solid fa-clock-rotate-left"></i></div>
-        <h3>Статистика</h3>
-        <p>Отмечайте результат сделки и улучшайте винрейт</p>
-      </div>
-    </div>
-  </div>
-
-  <!-- 3. SECTION: ВАША СТАТИСТИКА -->
-  <div class="stats-dashboard-grid">
-    
-    <!-- Карточка со статистикой сделок -->
-    <div class="glass-card dashboard-card">
-      <div class="card-header-flex">
-        <h3>Ваша статистика</h3>
-        <button class="btn-text-danger" id="btnResetStats" onclick="resetUserStats()">
-          <i class="fa-solid fa-rotate-left"></i> Сброс
-        </button>
-      </div>
-
-      <div class="metrics-row">
-        <div class="metric-item">
-          <span class="metric-label">Всего сделок</span>
-          <div class="metric-value" id="statTotalTrades">87</div>
-        </div>
-
-        <div class="metric-item">
-          <span class="metric-label">Прибыльные</span>
-          <div class="metric-value text-green" id="statWins">68</div>
-        </div>
-
-        <div class="metric-item">
-          <span class="metric-label">Убыточные</span>
-          <div class="metric-value text-red" id="statLosses">19</div>
-        </div>
-
-        <div class="metric-item">
-          <span class="metric-label">Win Rate</span>
-          <div class="metric-value text-purple" id="statWinRate">78.2%</div>
-        </div>
-
-        <div class="metric-item">
-          <span class="metric-label">Прибыль</span>
-          <div class="metric-value text-green" id="statProfit">+$1,247.50</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- График Прогресса -->
-    <div class="glass-card dashboard-card chart-card">
-      <div class="card-header-flex">
-        <h3>Ваш прогресс</h3>
-        <select class="chart-period-select" id="chartPeriod" onchange="updateChartPeriod()">
-          <option value="7">7 дней</option>
-          <option value="30" selected>30 дней</option>
-          <option value="90">90 дней</option>
-          <option value="all">Всё время</option>
-        </select>
-      </div>
-      <div class="chart-wrapper">
-        <canvas id="progressChart"></canvas>
-      </div>
-    </div>
-
-  </div>
-
-</div>
-      </div>
 
     </main>
 
-  </div>
+</div>
 
-  <script src="script.js"></script>
+<div class="toast" id="toast">
+    <span>✓</span>
+    <div>
+        <strong>Готово</strong>
+        <p>Изменения сохранены</p>
+    </div>
+</div>
+
+<script src="script.js"></script>
+
 </body>
 </html>

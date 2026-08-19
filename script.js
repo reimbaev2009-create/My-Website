@@ -1,88 +1,75 @@
-let myChart = null;
+// Инициализация иконок Lucide
+lucide.createIcons();
 
-// Инициализация при загрузке
-document.addEventListener('DOMContentLoaded', () => {
-  initChart();
+// Функция переключения вкладок
+function switchTab(tabName) {
+  // Переключение кнопок бокового меню
+  document.querySelectorAll('.nav-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.tab === tabName);
+  });
+
+  // Переключение ссылок в верхнем шапке
+  document.querySelectorAll('.top-link').forEach(link => {
+    link.classList.toggle('active', link.dataset.tab === tabName);
+  });
+
+  // Переключение секций контента
+  document.querySelectorAll('.content-section').forEach(section => {
+    section.classList.remove('active');
+  });
+
+  const activeSection = document.getElementById(`section-${tabName}`);
+  if (activeSection) {
+    activeSection.classList.add('active');
+  }
+}
+
+// Навешивание кликов на все интерактивные табы
+document.querySelectorAll('[data-tab]').forEach(element => {
+  element.addEventListener('click', (e) => {
+    e.preventDefault();
+    const tab = element.dataset.tab;
+    switchTab(tab);
+  });
 });
 
-// Переключение страниц
-function switchPage(pageName) {
-  const btnHome = document.getElementById('btnNavHome');
-  const btnSignals = document.getElementById('btnNavSignals');
-  const pageTitle = document.getElementById('pageTitle');
-  const pageHome = document.getElementById('pageHome');
-  const pageSignals = document.getElementById('pageSignals');
+// Инициализация графика прогресса
+const ctx = document.getElementById('progressChart').getContext('2d');
 
-  if (pageName === 'home') {
-    btnHome.classList.add('active');
-    btnSignals.classList.remove('active');
-    pageTitle.textContent = 'Главное';
-    if (pageHome) pageHome.classList.add('active');
-    if (pageSignals) pageSignals.classList.remove('active');
-  } else if (pageName === 'signals') {
-    btnSignals.classList.add('active');
-    btnHome.classList.remove('active');
-    pageTitle.textContent = 'Сигналы';
-    if (pageHome) pageHome.classList.remove('active');
-    if (pageSignals) pageSignals.classList.add('active');
-  }
-}
+const gradient = ctx.createLinearGradient(0, 0, 0, 120);
+gradient.addColorStop(0, 'rgba(99, 102, 241, 0.5)');
+gradient.addColorStop(1, 'rgba(99, 102, 241, 0.0)');
 
-// Инициализация графика Chart.js
-function initChart() {
-  const ctx = document.getElementById('progressChart');
-  if (!ctx) return;
-
-  const gradient = ctx.getContext('2d').createLinearGradient(0, 0, 0, 180);
-  gradient.addColorStop(0, 'rgba(124, 58, 237, 0.4)');
-  gradient.addColorStop(1, 'rgba(124, 58, 237, 0.0)');
-
-  myChart = new Chart(ctx, {
-    type: 'line',
-    data: {
-      labels: ['18 Apr', '25 Apr', '2 May', '9 May', '16 May'],
-      datasets: [{
-        label: 'Прибыль ($)',
-        data: [200, 450, 400, 850, 1247.50],
-        borderColor: '#7c3aed',
-        borderWidth: 3,
-        backgroundColor: gradient,
-        fill: true,
-        tension: 0.4,
-        pointBackgroundColor: '#3b82f6',
-        pointRadius: 4
-      }]
+new Chart(ctx, {
+  type: 'line',
+  data: {
+    labels: ['18 Apr', '25 Apr', '2 May', '9 May', '16 May'],
+    datasets: [{
+      data: [300, 450, 400, 800, 1247.50],
+      borderColor: '#6366f1',
+      borderWidth: 2,
+      backgroundColor: gradient,
+      fill: true,
+      tension: 0.4,
+      pointRadius: 3,
+      pointBackgroundColor: '#6366f1'
+    }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false }
     },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: { legend: { display: false } },
-      scales: {
-        x: { grid: { display: false }, ticks: { color: '#64748b', font: { size: 10 } } },
-        y: { grid: { color: 'rgba(255, 255, 255, 0.05)' }, ticks: { color: '#64748b', font: { size: 10 } } }
+    scales: {
+      x: {
+        grid: { display: false },
+        ticks: { color: '#9ca3af', font: { size: 10 } }
+      },
+      y: {
+        grid: { color: 'rgba(255, 255, 255, 0.05)' },
+        ticks: { color: '#9ca3af', font: { size: 10 } }
       }
     }
-  });
-}
-
-// Обновление периода графика
-function updateChartPeriod() {
-  if (!myChart) return;
-  const period = document.getElementById('chartPeriod').value;
-  
-  if (period === '7') {
-    myChart.data.labels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-    myChart.data.datasets[0].data = [900, 950, 1020, 1100, 1080, 1190, 1247.50];
-  } else {
-    myChart.data.labels = ['18 Apr', '25 Apr', '2 May', '9 May', '16 May'];
-    myChart.data.datasets[0].data = [200, 450, 400, 850, 1247.50];
   }
-  myChart.update();
-}
-
-// Заглушка сброса статистики
-function resetUserStats() {
-  if (confirm('Вы действительно хотите сбросить всю статистику?')) {
-    alert('Статистика сброшена!');
-  }
-}
+});
