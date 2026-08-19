@@ -1,19 +1,14 @@
-// Инициализация иконок Lucide
 lucide.createIcons();
 
-// Функция переключения вкладок
 function switchTab(tabName) {
-  // Переключение кнопок бокового меню
   document.querySelectorAll('.nav-btn').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.tab === tabName);
   });
 
-  // Переключение ссылок в верхнем шапке
   document.querySelectorAll('.top-link').forEach(link => {
     link.classList.toggle('active', link.dataset.tab === tabName);
   });
 
-  // Переключение секций контента
   document.querySelectorAll('.content-section').forEach(section => {
     section.classList.remove('active');
   });
@@ -24,7 +19,6 @@ function switchTab(tabName) {
   }
 }
 
-// Навешивание кликов на все интерактивные табы
 document.querySelectorAll('[data-tab]').forEach(element => {
   element.addEventListener('click', (e) => {
     e.preventDefault();
@@ -33,9 +27,7 @@ document.querySelectorAll('[data-tab]').forEach(element => {
   });
 });
 
-// Инициализация графика прогресса
 const ctx = document.getElementById('progressChart').getContext('2d');
-
 const gradient = ctx.createLinearGradient(0, 0, 0, 120);
 gradient.addColorStop(0, 'rgba(99, 102, 241, 0.5)');
 gradient.addColorStop(1, 'rgba(99, 102, 241, 0.0)');
@@ -58,18 +50,10 @@ new Chart(ctx, {
   options: {
     responsive: true,
     maintainAspectRatio: false,
-    plugins: {
-      legend: { display: false }
-    },
+    plugins: { legend: { display: false } },
     scales: {
-      x: {
-        grid: { display: false },
-        ticks: { color: '#9ca3af', font: { size: 10 } }
-      },
-      y: {
-        grid: { color: 'rgba(255, 255, 255, 0.05)' },
-        ticks: { color: '#9ca3af', font: { size: 10 } }
-      }
+      x: { grid: { display: false }, ticks: { color: '#9ca3af', font: { size: 10 } } },
+      y: { grid: { color: 'rgba(255, 255, 255, 0.05)' }, ticks: { color: '#9ca3af', font: { size: 10 } } }
     }
   }
 });

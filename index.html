@@ -3,22 +3,24 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SignalBot — AI Trading Assistant</title>
+  <title>BeybarsBot — AI Trading Assistant</title>
+  
+  <!-- Подключение CSS -->
   <link rel="stylesheet" href="styles.css">
-  <!-- Подключение иконок Lucide -->
+  
+  <!-- Иконки Lucide и график Chart.js -->
   <script src="https://unpkg.com/lucide@latest"></script>
-  <!-- Chart.js для графика -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
   <div class="app-container">
     
-    <!-- Боковая панель (Sidebar) -->
+    <!-- Sidebar -->
     <aside class="sidebar">
       <div class="brand">
         <div class="logo-icon"><i data-lucide="bot"></i></div>
         <div class="brand-info">
-          <h2>SignalBot</h2>
+          <h2>BeybarsBot</h2>
           <span>AI Trading Assistant</span>
         </div>
       </div>
@@ -54,10 +56,10 @@
       </div>
     </aside>
 
-    <!-- Основной контент -->
+    <!-- Main Content -->
     <main class="main-content">
       
-      <!-- Верхняя шапка -->
+      <!-- Top Header -->
       <header class="top-header">
         <div class="top-nav">
           <a href="#" class="top-link active" data-tab="home">Главное</a>
@@ -76,10 +78,9 @@
         </div>
       </header>
 
-      <!-- Раздел: Главное -->
+      <!-- Section: Главное -->
       <section id="section-home" class="content-section active">
         
-        <!-- Героский баннер + малые карточки -->
         <div class="hero-grid">
           <div class="hero-banner">
             <div class="hero-text">
@@ -90,8 +91,6 @@
               </button>
             </div>
             <div class="hero-avatar">
-              <!-- Заглушка неонового бота -->
-              <div class="bot-glow"></div>
               <img src="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=500&auto=format&fit=crop&q=80" alt="AI Robot">
             </div>
           </div>
@@ -121,7 +120,6 @@
           </div>
         </div>
 
-        <!-- Секция: Как это работает -->
         <div class="section-card how-it-works">
           <h3><i data-lucide="sparkles"></i> Как это работает?</h3>
           <div class="steps-container">
@@ -162,7 +160,6 @@
           </div>
         </div>
 
-        <!-- Нижний блок: Статистика + График -->
         <div class="dashboard-bottom-grid">
           <div class="section-card user-stats">
             <h3>Ваша статистика</h3>
@@ -206,7 +203,7 @@
 
       </section>
 
-      <!-- Раздел: Сигналы -->
+      <!-- Section: Сигналы -->
       <section id="section-signals" class="content-section">
         <div class="section-card">
           <h2><i data-lucide="radio"></i> Активные Торговые Сигналы</h2>
