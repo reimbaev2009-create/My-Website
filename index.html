@@ -3,7 +3,6 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>BeybarsBot — AI Trading Terminal</title>
   <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="theme-override.css">
@@ -144,6 +143,17 @@
         <div class="section-card">
           <h2 style="font-size: 18px; margin-bottom: 16px;"><i data-lucide="radio"></i> SIGNAL CENTER</h2>
           
+          <!-- Кнопка захвата экрана Pocket Option -->
+          <div style="margin-bottom: 16px;">
+            <button id="btnConnectPocket" style="width: 100%; padding: 12px; background: rgba(6, 182, 212, 0.12); border: 1px solid var(--accent-blue, #06b6d4); color: #06b6d4; border-radius: 10px; font-weight: 700; font-size: 13px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: 0.3s;">
+              <i data-lucide="monitor"></i> ПОДКЛЮЧИТЬ POCKET OPTION
+            </button>
+            <div id="captureStatus" style="display: none; align-items: center; gap: 6px; font-size: 11px; color: #10b981; margin-top: 6px; font-weight: 600;">
+              <span style="width: 6px; height: 6px; background: #10b981; border-radius: 50%; box-shadow: 0 0 6px #10b981;"></span>
+              [LIVE] POCKET OPTION CONNECTED
+            </div>
+          </div>
+
           <label style="font-size: 12px; color: var(--text-muted); display: block; margin-bottom: 6px;">SELECT OTC ASSET</label>
           <div class="asset-selector-wrapper">
             <button class="selector-btn" id="selectorToggleBtn">
@@ -164,11 +174,13 @@
             ⚡ GENERATE AI SIGNAL
           </button>
 
-          <!-- AI Scanner Animation Area -->
+          <!-- AI Scanner Area с живым снимком графика -->
           <div class="ai-scanner-box" id="aiScannerBox">
-            <div class="radar-spinner">
-              <div class="radar-core"></div>
+            <div style="position: relative; width: 100%; max-width: 480px; height: 220px; margin: 0 auto 16px; border-radius: 12px; overflow: hidden; border: 1px solid rgba(99, 102, 241, 0.4); background: #000;">
+              <canvas id="chartSnapshotCanvas" style="width: 100%; height: 100%; object-fit: cover; display: block;"></canvas>
+              <div class="scan-line" style="position: absolute; top: 0; left: 0; width: 100%; height: 3px; background: linear-gradient(90deg, transparent, #06b6d4, #fff, #6366f1, transparent); box-shadow: 0 0 12px #06b6d4; animation: scanAnimation 2s ease-in-out infinite alternate;"></div>
             </div>
+            
             <div class="scan-step-text" id="scanStepText">INITIALIZING AI ENGINE</div>
             <div class="scan-progress-num" id="scanProgressNum">0%</div>
           </div>
