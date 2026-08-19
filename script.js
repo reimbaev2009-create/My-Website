@@ -1,77 +1,123 @@
-// 1. Инициализация иконок Lucide
 lucide.createIcons();
 
-// 2. Логика переключения вкладок (Sidebar и Верхняя шапка)
+// 1. Плавная смена вкладок
 function switchTab(tabName) {
-  // Обновляем кнопки в сайдбаре
   document.querySelectorAll('.nav-btn').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.tab === tabName);
   });
 
-  // Обновляем ссылки в верхнем меню
   document.querySelectorAll('.top-link').forEach(link => {
     link.classList.toggle('active', link.dataset.tab === tabName);
   });
 
-  // Переключаем видимость секций
-  document.querySelectorAll('.content-section').forEach(section => {
-    section.classList.remove('active');
+  const sections = document.querySelectorAll('.content-section');
+  
+  sections.forEach(section => {
+    if (section.classList.contains('active')) {
+      section.style.opacity = '0';
+      section.style.transform = 'translateY(15px)';
+      
+      setTimeout(() => {
+        section.classList.remove('active');
+        const targetSection = document.getElementById(`section-${tabName}`);
+        if (targetSection) {
+          targetSection.classList.add('active');
+          setTimeout(() => {
+            targetSection.style.opacity = '1';
+            targetSection.style.transform = 'translateY(0)';
+          }, 50);
+        }
+      }, 300);
+    }
   });
-
-  const activeSection = document.getElementById(`section-${tabName}`);
-  if (activeSection) {
-    activeSection.classList.add('active');
-  }
 }
 
-// Навешиваем клики на все элементы с атрибутом data-tab
 document.querySelectorAll('[data-tab]').forEach(element => {
   element.addEventListener('click', (e) => {
     e.preventDefault();
-    const tab = element.dataset.tab;
-    switchTab(tab);
+    switchTab(element.dataset.tab);
   });
 });
 
-// 3. Функция копирования торговых сигналов
+// 2. Копирование сигналов с плавной обратной связью
 document.addEventListener('click', (e) => {
   if (e.target.classList.contains('btn-action')) {
     const card = e.target.closest('.signal-card');
     const pair = card.querySelector('.pair').textContent;
     const badge = card.querySelector('.badge').textContent;
-    const info = Array.from(card.querySelectorAll('.signal-body div'))
-                     .map(div => div.textContent.trim())
-                     .join('\n');
 
-    const signalText = `Сигнал: ${pair}\nНаправление: ${badge}\n${info}`;
-
-    navigator.clipboard.writeText(signalText).then(() => {
-      const originalText = e.target.textContent;
+    navigator.clipboard.writeText(`Сигнал: ${pair} | Направление: ${badge}`).then(() => {
+      const origText = e.target.textContent;
       e.target.textContent = 'Скопировано! ✓';
       e.target.style.background = '#10b981';
+      e.target.style.borderColor = '#10b981';
 
       setTimeout(() => {
-        e.target.textContent = originalText;
+        e.target.textContent = origText;
         e.target.style.background = '';
+        e.target.style.borderColor = '';
       }, 2000);
     });
   }
 });
 
-// 4. Логика кнопки "Настройки"
-const settingsBtn = document.querySelector('.settings-btn');
-if (settingsBtn) {
-  settingsBtn.addEventListener('click', () => {
-    alert('Настройки аккаунта:\n- Режим работы: AI Auto-Analyze\n- Уведомления: Включены\n- API Pocket Option: Подключено');
+// 3. Динамическая генерация сигналов
+const pairs = ['GBP/USD', 'USD/JPY', 'AUD/USD', 'ETH/USDT', 'SOL/USDT', 'XRP/USDT'];
+const generateBtn = document.getElementById('generateSignalBtn');
+
+if (generateBtn) {
+  generateBtn.addEventListener('click', () => {
+    generateBtn.disabled = true;
+    generateBtn.style.opacity = '0.7';
+    generateBtn.innerHTML = '<i data-lucide="loader"></i> Анализ рынка...';
+    lucide.createIcons();
+
+    setTimeout(() => {
+      const isBuy = Math.random() > 0.5;
+      const pair = pairs[Math.floor(Math.random() * pairs.length)];
+      const accuracy = (76 + Math.random() * 18).toFixed(1);
+      const entry = (1 + Math.random() * 100).toFixed(4);
+
+      const newCard = document.createElement('div');
+      newCard.className = `signal-card ${isBuy ? 'buy' : 'sell'}`;
+      newCard.innerHTML = `
+        <div class="signal-head">
+          <span class="pair">${pair}</span>
+          <span class="badge ${isBuy ? 'buy' : 'sell'}">${isBuy ? 'CALL (ВВЕРХ)' : 'PUT (ВНИЗ)'}</span>
+        </div>
+        <div class="signal-body">
+          <div><span>Время экспирации:</span> <strong>3 мин</strong></div>
+          <div><span>Точность:</span> <strong>${accuracy}%</strong></div>
+          <div><span>Вход:</span> <strong>${entry}</strong></div>
+        </div>
+        <button class="btn-action">Копировать сигнал</button>
+      `;
+
+      document.getElementById('signalsGrid').prepend(newCard);
+
+      generateBtn.disabled = false;
+      generateBtn.style.opacity = '1';
+      generateBtn.innerHTML = '<i data-lucide="refresh-cw"></i> Запросить AI Сигнал';
+      lucide.createIcons();
+    }, 1000);
   });
 }
 
-// 5. Построение графика Chart.js
+// 4. Модальное окно настроек
+const modal = document.getElementById('settingsModal');
+document.getElementById('openSettings')?.addEventListener('click', () => modal.classList.add('active'));
+document.getElementById('closeSettings')?.addEventListener('click', () => modal.classList.remove('active'));
+
+modal?.addEventListener('click', (e) => {
+  if (e.target === modal) modal.classList.remove('active');
+});
+
+// 5. Построение графика
 const chartCanvas = document.getElementById('progressChart');
 if (chartCanvas) {
   const ctx = chartCanvas.getContext('2d');
   const gradient = ctx.createLinearGradient(0, 0, 0, 120);
-  gradient.addColorStop(0, 'rgba(99, 102, 241, 0.5)');
+  gradient.addColorStop(0, 'rgba(99, 102, 241, 0.4)');
   gradient.addColorStop(1, 'rgba(99, 102, 241, 0.0)');
 
   new Chart(ctx, {
@@ -85,7 +131,8 @@ if (chartCanvas) {
         backgroundColor: gradient,
         fill: true,
         tension: 0.4,
-        pointRadius: 3,
+        pointRadius: 4,
+        pointHoverRadius: 6,
         pointBackgroundColor: '#6366f1'
       }]
     },
