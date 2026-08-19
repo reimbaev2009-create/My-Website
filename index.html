@@ -3,15 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>BeybarsBot — AI Trading Assistant</title>
-  
+  <title>BeybarsBot — AI Trading Terminal</title>
   <link rel="stylesheet" href="styles.css">
   <script src="https://unpkg.com/lucide@latest"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
   <div class="app-container">
-    
     <!-- Sidebar -->
     <aside class="sidebar">
       <div class="brand">
@@ -35,241 +33,214 @@
         <div class="status-card">
           <span class="status-dot"></span>
           <div>
-            <p class="status-title">AI Bot Online</p>
-            <p class="status-sub">Готов к анализу рынка</p>
+            <p style="font-weight: 600; font-size: 12px;">AI Market Engine</p>
+            <p style="font-size: 10px; color: var(--text-muted);">ONLINE</p>
           </div>
         </div>
-
-        <div class="plan-card">
-          <div class="plan-info">
-            <p class="plan-title"><i data-lucide="crown"></i> Pro Plan</p>
-            <p class="plan-sub">Активен до 01.06.2026</p>
-          </div>
-        </div>
-
-        <button class="settings-btn" id="openSettings">
-          <i data-lucide="settings"></i> Настройки
-        </button>
       </div>
     </aside>
 
     <!-- Main Content -->
     <main class="main-content">
-      
-      <!-- Top Header -->
       <header class="top-header">
         <div class="top-nav">
           <a href="#" class="top-link active" data-tab="home">Главное</a>
           <a href="#" class="top-link" data-tab="signals">Сигналы</a>
         </div>
         <div class="user-profile">
-          <button class="icon-btn" id="notifBtn"><i data-lucide="bell"></i></button>
-          <div class="profile-info">
-            <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80" alt="Avatar" class="avatar">
-            <div>
-              <p class="user-name">Anisa</p>
-              <span class="user-role">Pro Plan</span>
-            </div>
-            <i data-lucide="chevron-down"></i>
-          </div>
+          <span style="font-size: 13px; font-weight: 600;">Trader Terminal</span>
         </div>
       </header>
 
-      <!-- Section: Главное -->
+      <!-- SECTION: HOME -->
       <section id="section-home" class="content-section active">
-        
-        <div class="hero-grid">
-          <div class="hero-banner">
-            <div class="hero-text">
-              <h1>Ваш AI помощник<br><span class="gradient-text">в мире трейдинга</span></h1>
-              <p>Получайте точные торговые сигналы, основанные на техническом анализе, машинном обучении и данных в реальном времени.</p>
-              <button class="btn-primary" onclick="switchTab('signals')">
-                Перейти к сигналам <i data-lucide="arrow-right"></i>
-              </button>
-            </div>
-            <div class="hero-avatar">
-              <img src="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=500&auto=format&fit=crop&q=80" alt="AI Robot">
-            </div>
-          </div>
-
-          <div class="quick-stats">
-            <div class="stat-card">
-              <div class="stat-header">
-                <span>Точность сигналов</span>
-                <i data-lucide="trending-up" class="text-blue"></i>
-              </div>
-              <div class="stat-value" data-value="78.4">%</div>
-            </div>
-            <div class="stat-card">
-              <div class="stat-header">
-                <span>Всего сигналов</span>
-                <i data-lucide="bar-chart-2" class="text-purple"></i>
-              </div>
-              <div class="stat-value" data-value="1247"></div>
-            </div>
-            <div class="stat-card">
-              <div class="stat-header">
-                <span>Прибыльность</span>
-                <i data-lucide="activity" class="text-green"></i>
-              </div>
-              <div class="stat-value text-green" data-value="342.6">+%</div>
-            </div>
-          </div>
-        </div>
-
-        <div class="section-card how-it-works">
-          <h3><i data-lucide="sparkles"></i> Как это работает?</h3>
-          <div class="steps-container">
-            <div class="step-item">
-              <span class="step-num">01</span>
-              <div class="step-icon"><i data-lucide="search"></i></div>
-              <h4>Анализ рынка</h4>
-              <p>AI анализирует графики, индикаторы и рыночные настроения</p>
-            </div>
-            <div class="step-line"></div>
-            <div class="step-item">
-              <span class="step-num">02</span>
-              <div class="step-icon"><i data-lucide="cpu"></i></div>
-              <h4>Генерация сигнала</h4>
-              <p>На основе анализа создаётся точный торговый сигнал</p>
-            </div>
-            <div class="step-line"></div>
-            <div class="step-item">
-              <span class="step-num">03</span>
-              <div class="step-icon"><i data-lucide="bell"></i></div>
-              <h4>Вы получаете сигнал</h4>
-              <p>Получайте сигнал с обоснованием и статистикой</p>
-            </div>
-            <div class="step-line"></div>
-            <div class="step-item">
-              <span class="step-num">04</span>
-              <div class="step-icon"><i data-lucide="trending-up"></i></div>
-              <h4>Вы торгуете</h4>
-              <p>Используйте сигнал на Pocket Option и получайте прибыль</p>
-            </div>
-            <div class="step-line"></div>
-            <div class="step-item">
-              <span class="step-num">05</span>
-              <div class="step-icon"><i data-lucide="pie-chart"></i></div>
-              <h4>Статистика</h4>
-              <p>Отмечайте результат сделки и улучшайте винрейт</p>
-            </div>
-          </div>
-        </div>
-
-        <div class="dashboard-bottom-grid">
-          <div class="section-card user-stats">
-            <h3>Ваша статистика</h3>
-            <div class="stats-row">
-              <div class="mini-stat">
-                <span class="lbl">Всего сделок</span>
-                <span class="val">87</span>
-              </div>
-              <div class="mini-stat">
-                <span class="lbl">Прибыльные</span>
-                <span class="val text-green">68</span>
-              </div>
-              <div class="mini-stat">
-                <span class="lbl">Убыточные</span>
-                <span class="val text-red">19</span>
-              </div>
-              <div class="mini-stat">
-                <span class="lbl">Win Rate</span>
-                <span class="val text-purple">78.2%</span>
-              </div>
-              <div class="mini-stat highlight">
-                <span class="lbl">Прибыль</span>
-                <span class="val text-green">+$1,247.50</span>
-              </div>
-            </div>
-          </div>
-
-          <div class="section-card chart-card">
-            <div class="chart-header">
-              <h3>Ваш прогресс</h3>
-              <select class="chart-select">
-                <option>30 дней</option>
-                <option>7 дней</option>
-              </select>
-            </div>
-            <div class="chart-wrapper">
-              <canvas id="progressChart"></canvas>
-            </div>
-          </div>
-        </div>
-
-      </section>
-
-      <!-- Section: Сигналы -->
-      <section id="section-signals" class="content-section">
         <div class="section-card">
-          <div class="signals-header-row">
-            <div>
-              <h2><i data-lucide="radio"></i> Активные Торговые Сигналы</h2>
-              <p class="subtitle">Сигналы генерируются автоматически в режиме реального времени.</p>
-            </div>
-            <button class="btn-primary" id="generateSignalBtn">
-              <i data-lucide="refresh-cw"></i> Запросить AI Сигнал
+          <h1>Ваш AI помощник <span style="color: var(--accent-blue)">в мире трейдинга</span></h1>
+          <p style="color: var(--text-muted); margin-top: 8px; font-size: 14px;">
+            Профессиональный AI Signal Center. Точные OTC сигналы на основе индикаторного анализа EMA, RSI, MACD и структуры рынка.
+          </p>
+          <button class="btn-generate-main" style="width: auto; margin-top: 20px; padding: 12px 24px;" onclick="window.switchTab('signals')">
+            Перейти к сигналам <i data-lucide="arrow-right"></i>
+          </button>
+        </div>
+
+        <div class="stats-grid-4">
+          <div class="stat-box">
+            <span class="lbl">TODAY'S TRADES</span>
+            <span class="val" id="dash-today-trades">0</span>
+          </div>
+          <div class="stat-box">
+            <span class="lbl">TODAY'S WIN RATE</span>
+            <span class="val" id="dash-today-wr">0.00%</span>
+          </div>
+          <div class="stat-box">
+            <span class="lbl">TODAY'S P&L</span>
+            <span class="val" id="dash-today-pnl">$0.00</span>
+          </div>
+          <div class="stat-box">
+            <span class="lbl">TOTAL P&L</span>
+            <span class="val" id="dash-total-pnl">$0.00</span>
+          </div>
+        </div>
+
+        <div class="section-card">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+            <h3>PERFORMANCE CHART</h3>
+            <button class="btn-pnl-choice" id="btn-end-session-trigger" style="flex: none; padding: 8px 16px;">
+              END SESSION
             </button>
           </div>
-          
-          <div class="signals-grid" id="signalsGrid">
-            <div class="signal-card buy">
-              <div class="signal-head">
-                <span class="pair">EUR / USD</span>
-                <span class="badge buy">CALL (ВВЕРХ)</span>
-              </div>
-              <div class="signal-body">
-                <div><span>Время экспирации:</span> <strong>3 мин</strong></div>
-                <div><span>Точность:</span> <strong>84%</strong></div>
-                <div><span>Вход:</span> <strong>1.08450</strong></div>
-              </div>
-              <button class="btn-action">Копировать сигнал</button>
+          <div style="height: 220px; position: relative;">
+            <canvas id="performanceChart"></canvas>
+            <div id="chart-empty-msg" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: var(--text-muted); font-size: 13px;">
+              No performance data yet. Complete your first trading session to see your performance.
             </div>
+          </div>
+        </div>
 
-            <div class="signal-card sell">
-              <div class="signal-head">
-                <span class="pair">BTC / USDT</span>
-                <span class="badge sell">PUT (ВНИЗ)</span>
-              </div>
-              <div class="signal-body">
-                <div><span>Время экспирации:</span> <strong>5 мин</strong></div>
-                <div><span>Точность:</span> <strong>79%</strong></div>
-                <div><span>Вход:</span> <strong>64210.00</strong></div>
-              </div>
-              <button class="btn-action">Копировать сигнал</button>
-            </div>
+        <div class="section-card">
+          <h3>DAILY PERFORMANCE HISTORY</h3>
+          <div id="daily-history-container" style="margin-top: 16px;">
+            <p style="color: var(--text-muted); font-size: 13px;">No trading sessions yet</p>
           </div>
         </div>
       </section>
 
+      <!-- SECTION: SIGNALS -->
+      <section id="section-signals" class="content-section">
+        <div class="section-card">
+          <h2 style="font-size: 18px; margin-bottom: 16px;"><i data-lucide="radio"></i> SIGNAL CENTER</h2>
+          
+          <label style="font-size: 12px; color: var(--text-muted); display: block; margin-bottom: 6px;">SELECT OTC ASSET</label>
+          <div class="asset-selector-wrapper">
+            <button class="selector-btn" id="selectorToggleBtn">
+              <span id="selectedAssetLabel">EUR/USD OTC</span>
+              <i data-lucide="chevron-down"></i>
+            </button>
+            <div class="dropdown-menu" id="assetDropdown">
+              <input type="text" class="search-input" id="assetSearchInput" placeholder="Search OTC asset...">
+              <div class="asset-list" id="assetListContainer"></div>
+            </div>
+          </div>
+
+          <div style="margin-bottom: 20px; font-size: 13px; color: var(--text-muted);">
+            Expiration: <strong style="color: #fff;">1 MINUTE</strong>
+          </div>
+
+          <button class="btn-generate-main" id="generateSignalBtn">
+            ⚡ GENERATE AI SIGNAL
+          </button>
+
+          <!-- AI Scanner Animation Area -->
+          <div class="ai-scanner-box" id="aiScannerBox">
+            <div class="radar-spinner">
+              <div class="radar-core"></div>
+            </div>
+            <div class="scan-step-text" id="scanStepText">INITIALIZING AI ENGINE</div>
+            <div class="scan-progress-num" id="scanProgressNum">0%</div>
+          </div>
+
+          <!-- Active Signal Display Area -->
+          <div class="active-signal-display" id="activeSignalDisplay" style="display: none;">
+            <div class="signal-main-card">
+              <span id="sigAsset" style="font-size: 16px; font-weight: 700; color: var(--text-muted);">EUR/USD OTC</span>
+              <div class="signal-type-badge CALL" id="sigTypeBadge">CALL ↑</div>
+              
+              <div style="font-size: 12px; color: var(--text-muted);">Expiration: 1 MIN | Confidence: <strong id="sigConf">84%</strong> | Entry: <strong id="sigEntry">1.08450</strong></div>
+
+              <div class="circular-timer-wrapper">
+                <svg class="timer-svg">
+                  <circle class="timer-circle-bg" cx="60" cy="60" r="54"></circle>
+                  <circle class="timer-circle-progress" id="timerProgressCircle" cx="60" cy="60" r="54"></circle>
+                </svg>
+                <div class="timer-time-text" id="timerText">01:00</div>
+              </div>
+
+              <div id="signalStatusText" style="font-size: 13px; font-weight: 700; color: var(--accent-purple);">SIGNAL ACTIVE</div>
+
+              <!-- WIN / LOSS Manual Buttons -->
+              <div class="result-btn-row" id="resultBtnRow" style="display: none;">
+                <button class="btn-result win" onclick="window.handleSignalResult('WIN')">✓ WIN</button>
+                <button class="btn-result loss" onclick="window.handleSignalResult('LOSS')">✕ LOSS</button>
+              </div>
+            </div>
+
+            <!-- Why This Signal Box -->
+            <div class="section-card">
+              <h4 style="margin-bottom: 12px;">WHY THIS SIGNAL?</h4>
+              <div id="factorsList" style="display: flex; flex-direction: column; gap: 8px; font-size: 13px;"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Performance & Stats Cards -->
+        <div class="stats-grid-4">
+          <div class="stat-box">
+            <span class="lbl">TOTAL WIN RATE</span>
+            <span class="val" id="sig-total-wr">0.00%</span>
+          </div>
+          <div class="stat-box">
+            <span class="lbl">WINS / LOSSES</span>
+            <span class="val"><span style="color: var(--accent-green)" id="sig-wins">0</span> / <span style="color: var(--accent-red)" id="sig-losses">0</span></span>
+          </div>
+          <div class="stat-box">
+            <span class="lbl">CALL WIN RATE</span>
+            <span class="val" id="sig-call-wr">0.0%</span>
+          </div>
+          <div class="stat-box">
+            <span class="lbl">PUT WIN RATE</span>
+            <span class="val" id="sig-put-wr">0.0%</span>
+          </div>
+        </div>
+
+        <!-- Signal History Table -->
+        <div class="section-card">
+          <h3>SIGNAL HISTORY</h3>
+          <div style="overflow-x: auto; margin-top: 12px;">
+            <table style="width: 100%; text-align: left; border-collapse: collapse; font-size: 13px;">
+              <thead>
+                <tr style="border-bottom: 1px solid var(--panel-border); color: var(--text-muted);">
+                  <th style="padding: 10px;">Asset</th>
+                  <th style="padding: 10px;">Type</th>
+                  <th style="padding: 10px;">Generated</th>
+                  <th style="padding: 10px;">Confidence</th>
+                  <th style="padding: 10px;">Result</th>
+                </tr>
+              </thead>
+              <tbody id="signalHistoryTableBody">
+                <tr><td colspan="5" style="padding: 16px; text-align: center; color: var(--text-muted);">No signals generated yet</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
     </main>
   </div>
 
-  <!-- Modal Settings -->
-  <div class="modal-overlay" id="settingsModal">
+  <!-- END SESSION MODAL -->
+  <div class="modal-overlay" id="endSessionModal">
     <div class="modal-content">
-      <div class="modal-header">
-        <h3><i data-lucide="settings"></i> Настройки бота</h3>
-        <button class="close-modal" id="closeSettings">&times;</button>
+      <h3 style="margin-bottom: 8px;">TODAY'S RESULT</h3>
+      <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 16px;">Укажите фактический финансовый результат сегодняшней торговой сессии.</p>
+
+      <div class="pnl-options">
+        <button class="btn-pnl-choice active" id="btnPnlProfit" onclick="window.setPnlMode('PROFIT')">Я В ПЛЮСЕ</button>
+        <button class="btn-pnl-choice" id="btnPnlLoss" onclick="window.setPnlMode('LOSS')">Я В МИНУСЕ</button>
+        <button class="btn-pnl-choice" id="btnPnlZero" onclick="window.setPnlMode('ZERO')">$0 (НОЛЬ)</button>
       </div>
-      <div class="modal-body">
-        <div class="setting-item">
-          <span>Авто-сканирование рынка</span>
-          <input type="checkbox" checked>
-        </div>
-        <div class="setting-item">
-          <span>Звуковые уведомления</span>
-          <input type="checkbox" checked>
-        </div>
-        <div class="setting-item">
-          <span>Pocket Option API</span>
-          <span class="status-connected">Подключено</span>
-        </div>
+
+      <div id="pnlAmountContainer">
+        <label style="font-size: 11px; color: var(--text-muted); display: block; margin-bottom: 4px;">СУММА ($)</label>
+        <input type="number" class="pnl-input-field" id="pnlAmountInput" placeholder="0.00" step="0.01">
+      </div>
+
+      <div style="display: flex; gap: 10px;">
+        <button class="btn-pnl-choice" onclick="document.getElementById('endSessionModal').classList.remove('active')">Отмена</button>
+        <button class="btn-generate-main" style="padding: 12px;" onclick="window.saveDailySession()">Сохранить сессию</button>
       </div>
     </div>
   </div>
 
-  <script src="script.js"></script>
+  <script type="module" src="script.js"></script>
 </body>
 </html>
