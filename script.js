@@ -379,28 +379,37 @@ function renderChart() {
   if (performanceChart) performanceChart.destroy();
 
   const ctx = canvas.getContext('2d');
-  performanceChart = new Chart(ctx, {
-    type: 'line',
-    data: {
-      labels,
-      datasets: [{
-        label: 'Total P&L ($)',
-        data: dataPoints,
-        borderColor: '#6366f1',
-        borderWidth: 3,
-        fill: true,
-        backgroundColor: 'rgba(99, 102, 241, 0.1)',
-        tension: 0.3
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: { legend: { display: false } },
-      scales: {
-        x: { grid: { display: false }, ticks: { color: '#9ca3af' } },
-        y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#9ca3af' } }
-      }
+
+// Создаём неоновый градиент под линией
+const gradient = ctx.createLinearGradient(0, 0, 0, 250);
+gradient.addColorStop(0, 'rgba(6, 182, 212, 0.35)'); // Голубое свечение вверху
+gradient.addColorStop(1, 'rgba(6, 182, 212, 0.0)');  // Плавный уход в прозрачный внизу
+
+performanceChart = new Chart(ctx, {
+  type: 'line',
+  data: {
+    labels,
+    datasets: [{
+      label: 'Total P&L ($)',
+      data: dataPoints,
+      borderColor: '#06b6d4',          // Неоново-голубой цвет линии
+      borderWidth: 2.5,                // Толщина линии
+      fill: true,
+      backgroundColor: gradient,       // Применяем созданный градиент
+      tension: 0.35,                   // Плавные изгибы
+      pointRadius: 3,                  // Точки на графике
+      pointHoverRadius: 6,             // Увеличение точки при наведении
+      pointBackgroundColor: '#06b6d4'  // Цвет точек
+    }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: {
+      x: { grid: { display: false }, ticks: { color: '#64748b' } },
+      y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#64748b' } }
     }
-  });
+  }
+});
 }

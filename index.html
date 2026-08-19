@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>BeybarsBot — AI Trading Terminal</title>
   <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="theme-override.css">
   <script src="https://unpkg.com/lucide@latest"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
@@ -41,60 +42,95 @@
     </aside>
 
     <!-- Main Content -->
-    <main class="main-content">
-      <header class="top-header">
-        <div class="top-nav">
-          <a href="#" class="top-link active" data-tab="home">Главное</a>
-          <a href="#" class="top-link" data-tab="signals">Сигналы</a>
-        </div>
-        <div class="user-profile">
-          <span style="font-size: 13px; font-weight: 600;">Trader Terminal</span>
-        </div>
-      </header>
+    <!-- TOP BAR HEADER -->
+<div class="top-bar">
+  <div style="display: flex; gap: 24px; font-size: 14px; font-weight: 600;">
+    <span style="color: #fff; cursor: pointer;">Главное</span>
+    <span style="color: var(--text-muted); cursor: pointer;" onclick="document.querySelector('[data-tab=\'signals\']').click()">Сигналы</span>
+  </div>
+  <div style="display: flex; align-items: center; gap: 16px; font-size: 13px; color: var(--text-muted);">
+    <span style="display: flex; align-items: center; gap: 6px;">
+      <span style="width: 8px; height: 8px; background: #10b981; border-radius: 50%; box-shadow: 0 0 8px #10b981;"></span>
+      Trader Terminal
+    </span>
+    <i data-lucide="sun" style="width: 16px; height: 16px; cursor: pointer;"></i>
+    <i data-lucide="bell" style="width: 16px; height: 16px; cursor: pointer;"></i>
+    <div style="width: 28px; height: 28px; background: #312e81; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: #a5b4fc;">B</div>
+  </div>
+</div>
 
-      <!-- SECTION: HOME -->
-      <section id="section-home" class="content-section active">
-        <div class="section-card">
-          <h1>Ваш AI помощник <span style="color: var(--accent-blue)">в мире трейдинга</span></h1>
-          <p style="color: var(--text-muted); margin-top: 8px; font-size: 14px;">
-            Профессиональный AI Signal Center. Точные OTC сигналы на основе индикаторного анализа EMA, RSI, MACD и структуры рынка.
-          </p>
-          <button class="btn-generate-main" style="width: auto; margin-top: 20px; padding: 12px 24px;" onclick="window.switchTab('signals')">
-            Перейти к сигналам <i data-lucide="arrow-right"></i>
-          </button>
-        </div>
+<!-- HERO BANNER SECTION -->
+<div class="dark-card hero-card">
+  <div style="max-width: 520px;">
+    <h1 style="font-size: 30px; font-weight: 800; margin-bottom: 12px;">
+  Ваш AI помощник <span style="background: linear-gradient(90deg, #06b6d4, #6366f1); background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent;">в мире трейдинга</span>
+</h1>
+    <p style="color: var(--text-muted); font-size: 14px; line-height: 1.6; margin-bottom: 20px;">
+      Профессиональный AI Signal Center. Точные OTC сигналы на основе индикаторного анализа EMA, RSI, MACD и структуры рынка.
+    </p>
+    <button class="btn-gradient" onclick="document.querySelector('[data-tab=\'signals\']').click()">
+      Перейти к сигналам &rarr;
+    </button>
+  </div>
+  <div style="display: flex; gap: 6px; align-items: flex-end; height: 90px;">
+    <div style="width: 12px; height: 40%; background: linear-gradient(180deg, #06b6d4, transparent); border-radius: 4px;"></div>
+    <div style="width: 12px; height: 80%; background: linear-gradient(180deg, #3b82f6, transparent); border-radius: 4px;"></div>
+    <div style="width: 12px; height: 60%; background: linear-gradient(180deg, #6366f1, transparent); border-radius: 4px;"></div>
+    <div style="width: 12px; height: 100%; background: linear-gradient(180deg, #06b6d4, transparent); border-radius: 4px;"></div>
+    <div style="width: 12px; height: 70%; background: linear-gradient(180deg, #3b82f6, transparent); border-radius: 4px;"></div>
+  </div>
+</div>
 
-        <div class="stats-grid-4">
-          <div class="stat-box">
-            <span class="lbl">TODAY'S TRADES</span>
-            <span class="val" id="dash-today-trades">0</span>
-          </div>
-          <div class="stat-box">
-            <span class="lbl">TODAY'S WIN RATE</span>
-            <span class="val" id="dash-today-wr">0.00%</span>
-          </div>
-          <div class="stat-box">
-            <span class="lbl">TODAY'S P&L</span>
-            <span class="val" id="dash-today-pnl">$0.00</span>
-          </div>
-          <div class="stat-box">
-            <span class="lbl">TOTAL P&L</span>
-            <span class="val" id="dash-total-pnl">$0.00</span>
-          </div>
-        </div>
+<!-- STATISTICS GRID (ТВОИ ID СОХРАНЕНЫ) -->
+<div class="stats-grid">
+  <div class="dark-card stat-card">
+    <div>
+      <div class="stat-label">TODAY'S TRADES</div>
+      <div class="stat-value" id="dash-today-trades">0</div>
+    </div>
+    <i data-lucide="trending-up" style="color: #3b82f6;"></i>
+  </div>
+  <div class="dark-card stat-card">
+    <div>
+      <div class="stat-label">TODAY'S WIN RATE</div>
+      <div class="stat-value" id="dash-today-wr">0%</div>
+    </div>
+    <i data-lucide="pie-chart" style="color: #06b6d4;"></i>
+  </div>
+  <div class="dark-card stat-card">
+    <div>
+      <div class="stat-label">TODAY'S P&L</div>
+      <div class="stat-value" id="dash-today-pnl" style="color: #10b981;">$0.00</div>
+    </div>
+    <i data-lucide="activity" style="color: #10b981;"></i>
+  </div>
+  <div class="dark-card stat-card">
+    <div>
+      <div class="stat-label">TOTAL P&L</div>
+      <div class="stat-value" id="dash-total-pnl" style="color: #10b981;">$0.00</div>
+    </div>
+    <i data-lucide="wallet" style="color: #6366f1;"></i>
+  </div>
+</div>
 
-        <div class="section-card">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-            <h3>PERFORMANCE CHART</h3>
-            <button class="btn-pnl-choice" id="btn-end-session-trigger" style="flex: none; padding: 8px 16px;">
-              END SESSION
-            </button>
-          </div>
-          <div style="height: 220px; position: relative;">
-            <canvas id="performanceChart"></canvas>
-            <div id="chart-empty-msg" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: var(--text-muted); font-size: 13px;">
-              No performance data yet. Complete your first trading session to see your performance.
-            </div>
+<!-- PERFORMANCE CHART -->
+<div class="dark-card" style="padding: 24px; margin-bottom: 24px;">
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+    <div style="font-size: 13px; font-weight: 700; letter-spacing: 0.5px;">PERFORMANCE CHART</div>
+    <button id="btn-end-session-trigger" style="background: rgba(99, 102, 241, 0.15); border: 1px solid #6366f1; color: #a5b4fc; padding: 6px 14px; border-radius: 8px; font-size: 12px; font-weight: 700; cursor: pointer;">
+      END SESSION
+    </button>
+  </div>
+  <div style="height: 260px; width: 100%;">
+    <canvas id="performanceChart"></canvas>
+  </div>
+</div>
+
+<!-- DAILY PERFORMANCE HISTORY -->
+<div class="dark-card" style="padding: 24px; margin-bottom: 24px;">
+  <div style="font-size: 13px; font-weight: 700; letter-spacing: 0.5px; margin-bottom: 16px;">DAILY PERFORMANCE HISTORY</div>
+  <div id="daily-history-container"></div>
+</div>
           </div>
         </div>
 
