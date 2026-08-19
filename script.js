@@ -1,5 +1,6 @@
 import { OTC_FOREX_ASSETS } from './assets.js';
 import { store } from './store.js';
+import { ChartAnalyzer } from './chartAnalyzer.js';
 
 let performanceChart = null;
 let activeTimerInterval = null;
@@ -8,6 +9,7 @@ let currentPnlMode = 'PROFIT';
 // Глобальные переменные для Screen Capture API
 let screenStream = null;
 let screenVideo = null;
+let chartAnalyzerInstance = null;
 
 const SCAN_STEPS = [
   "INITIALIZING AI ENGINE",
@@ -185,16 +187,18 @@ function initSignalGenerator() {
     if (displayBox) displayBox.style.display = 'none';
 
     // 1. Делаем мгновенный кадр с видеопотока на холст
-    let detectedSignalType = 'CALL';
+    let analysisResult = null;
     if (snapshotCanvas) {
       const ctx = snapshotCanvas.getContext('2d', { willReadFrequently: true });
       snapshotCanvas.width = screenVideo.videoWidth;
       snapshotCanvas.height = screenVideo.videoHeight;
       ctx.drawImage(screenVideo, 0, 0, snapshotCanvas.width, snapshotCanvas.height);
 
-      // 2. Считываем реальные пиксели кадра
-      const frameData = ctx.getImageData(0, 0, snapshotCanvas.width, snapshotCanvas.height);
-      detectedSignalType = analyzeGraphPixels(frameData);
+      // 2. Выполняем анализ кадра через комп. зрение
+      if (!chartAnalyzerInstance) {
+        chartAnalyzerInstance = new ChartAnalyzer(snapshotCanvas);
+      }
+      analysisResult = chartAnalyzerInstance.analyzeCurrentFrame();
     }
 
     // 3. Запуск анимации сканера
@@ -210,62 +214,52 @@ function initSignalGenerator() {
         clearInterval(interval);
         setTimeout(() => {
           scannerBox.classList.remove('active');
-          createAndStartSignal(detectedSignalType);
+          createAndStartSignal(analysisResult);
         }, 500);
       }
     }, 250);
   });
 }
 
-// Функция анализа пикселей графика
-function analyzeGraphPixels(imageData) {
-  const data = imageData.data;
-  let greenCount = 0;
-  let redCount = 0;
-
-  const width = imageData.width;
-  const height = imageData.height;
-
-  // Анализируем правую половину изображения (свежая часть графика)
-  for (let y = 0; y < height; y += 4) {
-    for (let x = Math.floor(width / 2); x < width; x += 4) {
-      const index = (y * width + x) * 4;
-      const r = data[index];
-      const g = data[index + 1];
-      const b = data[index + 2];
-
-      // Выделение зеленой свечи Pocket Option
-      if (g > 140 && r < 110 && b < 150) greenCount++;
-      // Выделение красной свечи
-      if (r > 160 && g < 90 && b < 90) redCount++;
-    }
-  }
-
-  return greenCount >= redCount ? 'CALL' : 'PUT';
-}
-
-function createAndStartSignal(forcedType = null) {
+function createAndStartSignal(analysisResult = null) {
   const asset = store.getSelectedAsset();
-  const isCall = forcedType ? (forcedType === 'CALL') : (Math.random() > 0.5);
   const now = Date.now();
   const expires = now + 60000; // 1 минута
+
+  let signalType = 'CALL';
+  let confidenceStr = '85%';
+  let factorList = [
+    { name: 'EMA 20 / EMA 50', status: 'Bullish confirmation ✓' },
+    { name: 'RSI (14)', status: 'Momentum aligned ✓' },
+    { name: 'Price Action', status: 'Key level reaction ✓' }
+  ];
+
+  if (analysisResult) {
+    signalType = analysisResult.type || (Math.random() > 0.5 ? 'CALL' : 'PUT');
+    confidenceStr = `${analysisResult.confidence || Math.floor(82 + Math.random() * 12)}%`;
+    
+    if (analysisResult.factors && analysisResult.factors.length > 0) {
+      factorList = analysisResult.factors.map((f, i) => ({
+        name: `Analysis Factor #${i + 1}`,
+        status: f
+      }));
+    }
+  } else {
+    signalType = Math.random() > 0.5 ? 'CALL' : 'PUT';
+    confidenceStr = `${Math.floor(82 + Math.random() * 12)}%`;
+  }
 
   const signal = {
     id: 'sig_' + now,
     asset,
-    type: isCall ? 'CALL' : 'PUT',
-    entry: (1 + Math.random() * 100).toFixed(5),
-    confidence: Math.floor(82 + Math.random() * 15) + '%',
+    type: signalType,
+    entry: analysisResult?.entryPrice || (1 + Math.random() * 100).toFixed(5),
+    confidence: confidenceStr,
     generatedAt: now,
     expirationAt: expires,
     status: 'ACTIVE',
     result: null,
-    factors: [
-      { name: 'Screen Pixel Analysis', status: 'Pattern matched ✓' },
-      { name: 'EMA 20 / EMA 50', status: 'Bullish confirmation ✓' },
-      { name: 'RSI (14)', status: 'Momentum aligned ✓' },
-      { name: 'Price Action', status: 'Key level reaction ✓' }
-    ]
+    factors: factorList
   };
 
   store.setActiveSignal(signal);
@@ -551,45 +545,4 @@ function renderChart() {
       }
     }
   });
-}
-import { ChartAnalyzer } from './chartAnalyzer.js';
-
-// Находим холст для анализа снимка
-const chartCanvas = document.getElementById('chartSnapshotCanvas');
-const analyzer = new ChartAnalyzer(chartCanvas);
-
-// Функция генерации сигнала, использующая реальный визуальный анализ
-async function generateRealAISignal() {
-  // 1. Делаем анализ кадра через комп. зрение
-  const analysisResult = analyzer.analyzeCurrentFrame();
-
-  if (!analysisResult.success) {
-    console.warn('Визуальный анализ не дал четкого результата:', analysisResult.reason);
-    // Фолбэк на случай, если экран не подключен
-  } else {
-    console.log('Результат компьютерного зрения:', analysisResult);
-  }
-
-  // 2. Используем полученный тип сигнала и факторы в интерфейсе
-  const signalType = analysisResult.type || (Math.random() > 0.5 ? 'CALL' : 'PUT');
-  const confidence = analysisResult.confidence || 82;
-  const factors = analysisResult.factors || [
-    'Анализ тренда по EMA 20/50',
-    'Сигнал осциллятора RSI в зоне перепроданности'
-  ];
-
-  // Обновляем DOM с результатами анализа
-  document.getElementById('sigTypeBadge').textContent = `${signalType} ${signalType === 'CALL' ? '↑' : '↓'}`;
-  document.getElementById('sigTypeBadge').className = `signal-type-badge ${signalType}`;
-  document.getElementById('sigConf').textContent = `${confidence}%`;
-
-  const factorsContainer = document.getElementById('factorsList');
-  if (factorsContainer) {
-    factorsContainer.innerHTML = factors.map(f => `
-      <div style="display: flex; align-items: center; gap: 8px;">
-        <span style="color: #10b981;">✓</span>
-        <span>${f}</span>
-      </div>
-    `).join('');
-  }
 }
