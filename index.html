@@ -5,10 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>BeybarsBot — AI Trading Assistant</title>
   
-  <!-- Подключение CSS -->
   <link rel="stylesheet" href="styles.css">
-  
-  <!-- Иконки Lucide и график Chart.js -->
   <script src="https://unpkg.com/lucide@latest"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
@@ -50,7 +47,7 @@
           </div>
         </div>
 
-        <button class="settings-btn">
+        <button class="settings-btn" id="openSettings">
           <i data-lucide="settings"></i> Настройки
         </button>
       </div>
@@ -66,7 +63,7 @@
           <a href="#" class="top-link" data-tab="signals">Сигналы</a>
         </div>
         <div class="user-profile">
-          <button class="icon-btn"><i data-lucide="bell"></i></button>
+          <button class="icon-btn" id="notifBtn"><i data-lucide="bell"></i></button>
           <div class="profile-info">
             <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80" alt="Avatar" class="avatar">
             <div>
@@ -101,21 +98,21 @@
                 <span>Точность сигналов</span>
                 <i data-lucide="trending-up" class="text-blue"></i>
               </div>
-              <div class="stat-value">78.4%</div>
+              <div class="stat-value" data-value="78.4">%</div>
             </div>
             <div class="stat-card">
               <div class="stat-header">
                 <span>Всего сигналов</span>
                 <i data-lucide="bar-chart-2" class="text-purple"></i>
               </div>
-              <div class="stat-value">1247</div>
+              <div class="stat-value" data-value="1247"></div>
             </div>
             <div class="stat-card">
               <div class="stat-header">
                 <span>Прибыльность</span>
                 <i data-lucide="activity" class="text-green"></i>
               </div>
-              <div class="stat-value text-green">+342.6%</div>
+              <div class="stat-value text-green" data-value="342.6">+%</div>
             </div>
           </div>
         </div>
@@ -206,10 +203,17 @@
       <!-- Section: Сигналы -->
       <section id="section-signals" class="content-section">
         <div class="section-card">
-          <h2><i data-lucide="radio"></i> Активные Торговые Сигналы</h2>
-          <p class="subtitle">Сигналы генерируются автоматически в режиме реального времени.</p>
+          <div class="signals-header-row">
+            <div>
+              <h2><i data-lucide="radio"></i> Активные Торговые Сигналы</h2>
+              <p class="subtitle">Сигналы генерируются автоматически в режиме реального времени.</p>
+            </div>
+            <button class="btn-primary" id="generateSignalBtn">
+              <i data-lucide="refresh-cw"></i> Запросить AI Сигнал
+            </button>
+          </div>
           
-          <div class="signals-grid">
+          <div class="signals-grid" id="signalsGrid">
             <div class="signal-card buy">
               <div class="signal-head">
                 <span class="pair">EUR / USD</span>
@@ -240,6 +244,30 @@
       </section>
 
     </main>
+  </div>
+
+  <!-- Modal Settings -->
+  <div class="modal-overlay" id="settingsModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3><i data-lucide="settings"></i> Настройки бота</h3>
+        <button class="close-modal" id="closeSettings">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="setting-item">
+          <span>Авто-сканирование рынка</span>
+          <input type="checkbox" checked>
+        </div>
+        <div class="setting-item">
+          <span>Звуковые уведомления</span>
+          <input type="checkbox" checked>
+        </div>
+        <div class="setting-item">
+          <span>Pocket Option API</span>
+          <span class="status-connected">Подключено</span>
+        </div>
+      </div>
+    </div>
   </div>
 
   <script src="script.js"></script>
