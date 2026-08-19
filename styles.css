@@ -1,3 +1,6 @@
+/* ==========================================================================
+   1. VARIABLES & RESET
+   ========================================================================== */
 :root {
   --bg-dark: #060913;
   --panel-bg: rgba(13, 18, 30, 0.75);
@@ -25,12 +28,37 @@ body {
   overflow-x: hidden;
 }
 
+/* ==========================================================================
+   2. UTILITIES & LAYOUT HELPERS
+   ========================================================================== */
+.text-green { color: var(--accent-green) !important; }
+.text-red { color: var(--accent-red) !important; }
+.text-muted { color: var(--text-muted) !important; }
+
 .app-container {
   display: flex;
   min-height: 100vh;
 }
 
-/* Sidebar */
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.2);
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--accent-purple);
+}
+
+/* ==========================================================================
+   3. SIDEBAR NAVIGATION
+   ========================================================================== */
 .sidebar {
   width: 260px;
   background: var(--panel-bg);
@@ -125,6 +153,9 @@ body {
   100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
 }
 
+/* ==========================================================================
+   4. MAIN CONTENT & SECTIONS
+   ========================================================================== */
 .main-content {
   flex-grow: 1;
   padding: 24px 32px;
@@ -161,6 +192,7 @@ body {
   transform: translateY(0);
 }
 
+/* Cards System */
 .section-card {
   background: var(--panel-bg);
   border: 1px solid var(--panel-border);
@@ -169,7 +201,27 @@ body {
   backdrop-filter: blur(12px);
 }
 
-/* Selector & Generate Button */
+.hero-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 32px;
+  background: radial-gradient(circle at top right, rgba(99, 102, 241, 0.15), rgba(13, 18, 30, 0.8));
+  border: 1px solid var(--panel-border);
+  border-radius: 20px;
+  backdrop-filter: blur(12px);
+}
+
+.dark-card {
+  background: var(--panel-bg);
+  border: 1px solid var(--panel-border);
+  border-radius: 20px;
+  backdrop-filter: blur(12px);
+}
+
+/* ==========================================================================
+   5. ASSET SELECTOR & GENERATE CONTROLS
+   ========================================================================== */
 .asset-selector-wrapper {
   position: relative;
   max-width: 400px;
@@ -219,6 +271,11 @@ body {
   border-bottom: 1px solid var(--panel-border);
   color: #fff;
   outline: none;
+  transition: border-color 0.2s;
+}
+
+.search-input:focus {
+  border-bottom-color: var(--accent-purple);
 }
 
 .asset-list { overflow-y: auto; max-height: 220px; }
@@ -258,7 +315,9 @@ body {
 
 .btn-generate-main:disabled { opacity: 0.6; cursor: not-allowed; }
 
-/* AI Analysis Radar Modal / Box */
+/* ==========================================================================
+   6. AI RADAR SCANNER & ACTIVE SIGNAL
+   ========================================================================== */
 .ai-scanner-box {
   display: none;
   flex-direction: column;
@@ -302,7 +361,6 @@ body {
 .scan-step-text { font-size: 14px; font-weight: 600; color: var(--accent-blue); margin-bottom: 8px; }
 .scan-progress-num { font-size: 24px; font-weight: 800; }
 
-/* Active Signal Card */
 .active-signal-display {
   display: flex;
   flex-direction: column;
@@ -376,14 +434,22 @@ body {
 .btn-result.loss { background: var(--accent-red); color: #fff; }
 .btn-result:hover { transform: scale(1.03); }
 
-/* Stats Grids */
+/* ==========================================================================
+   7. STATS GRIDS & METRICS
+   ========================================================================== */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+}
+
 .stats-grid-4 {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 16px;
 }
 
-.stat-box {
+.stat-box, .stat-card {
   background: rgba(255, 255, 255, 0.02);
   border: 1px solid var(--panel-border);
   padding: 18px;
@@ -392,10 +458,21 @@ body {
   flex-direction: column;
 }
 
-.stat-box .lbl { font-size: 12px; color: var(--text-muted); margin-bottom: 6px; }
-.stat-box .val { font-size: 22px; font-weight: 800; }
+.stat-box .lbl, .stat-label {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+  font-weight: 600;
+}
 
-/* Modals */
+.stat-box .val, .stat-value {
+  font-size: 22px;
+  font-weight: 800;
+}
+
+/* ==========================================================================
+   8. MODALS & INPUT FORMS
+   ========================================================================== */
 .modal-overlay {
   position: fixed;
   top: 0; left: 0; width: 100%; height: 100%;
@@ -419,6 +496,7 @@ body {
 }
 
 .pnl-options { display: flex; gap: 12px; margin: 16px 0; }
+
 .btn-pnl-choice {
   flex: 1; padding: 12px; border-radius: 10px; border: 1px solid var(--panel-border);
   background: rgba(255,255,255,0.03); color: #fff; cursor: pointer; font-weight: 600;
@@ -429,11 +507,21 @@ body {
 .pnl-input-field {
   width: 100%; padding: 14px; background: rgba(255,255,255,0.05);
   border: 1px solid var(--panel-border); border-radius: 10px; color: #fff; font-size: 18px; font-weight: 700; margin-bottom: 16px; outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
 }
 
-/* Responsive */
+.pnl-input-field:focus {
+  border-color: var(--accent-purple);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.25);
+}
+
+/* ==========================================================================
+   9. MEDIA QUERIES (RESPONSIVENESS)
+   ========================================================================== */
 @media (max-width: 768px) {
   .app-container { flex-direction: column; }
   .sidebar { width: 100%; border-right: none; border-bottom: 1px solid var(--panel-border); }
   .main-content { padding: 16px; }
+  .hero-card { flex-direction: column; align-items: flex-start; gap: 16px; }
+  .top-header { flex-direction: column; align-items: flex-start; gap: 12px; }
 }
