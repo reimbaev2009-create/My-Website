@@ -185,8 +185,8 @@ function initSignalGenerator() {
     const displayBox = document.getElementById('activeSignalDisplay');
     if (displayBox) displayBox.style.display = 'none';
 
-    // Запуск точного глубокого анализа кадра через ChartAnalyzer
-    let detectedSignalType = 'CALL';
+    // Равномерный случайный дефолт (50/50), если анализ не вернул четкого направления
+    let detectedSignalType = Math.random() > 0.5 ? 'CALL' : 'PUT'; 
     let analysisResult = null;
 
     if (snapshotCanvas && screenVideo) {

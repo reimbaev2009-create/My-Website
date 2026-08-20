@@ -5,14 +5,14 @@ export const ANALYSIS_CONFIG = {
     BULLISH_GREEN: {
       hueMin: 110,
       hueMax: 160,
-      satMin: 0.35,
-      valMin: 0.35
+      satMin: 0.20, // Снижено с 0.35 для захвата полупрозрачных и темных зеленых тонов
+      valMin: 0.25
     },
     BEARISH_RED: {
-      hueMinRange1: [0, 15],
-      hueMinRange2: [340, 360],
-      satMin: 0.35,
-      valMin: 0.35
+      hueMinRange1: [0, 20],
+      hueMinRange2: [330, 360],
+      satMin: 0.20, // Снижено с 0.35 для надежного детекта бордовых/красных свечей
+      valMin: 0.25
     }
   },
 
@@ -26,15 +26,13 @@ export const ANALYSIS_CONFIG = {
     ATR_PERIOD: 14
   },
 
-  // Весовая модель факторов для Score Engine (-1.0 ... +1.0)
+  // Весовая модель факторов для Score Engine (Нормализована до суммарных 1.0)
   SCORE_WEIGHTS: {
-    EMA_CROSS_AND_SLOPE: 0.25,
-    RSI_MOMENTUM: 0.20,
-    CANDLE_PATTERN: 0.25,
-    SUPPORT_RESISTANCE: 0.20,
-    VOLATILITY_FACTOR: 0.10
+    EMA_CROSS_AND_SLOPE: 0.40,
+    RSI_MOMENTUM: 0.30,
+    CANDLE_PATTERN: 0.30
   },
 
-  // Порог уверенности для выдачи сигнала
-  MIN_SIGNAL_THRESHOLD: 0.35 // Если |Final Score| < 0.35, сигнал NO TRADE
+  // Порог уверенности для выдачи сигнала (|Final Score| >= 0.22)
+  MIN_SIGNAL_THRESHOLD: 0.22
 };
