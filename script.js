@@ -2,6 +2,9 @@ import { ChartAnalyzer } from './chartAnalyzer.js';
 import { OTC_FOREX_ASSETS } from './assets.js';
 import { store } from './store.js';
 
+// Экспортируем store в глобальное окно браузера для отладки через консоль F12
+window.store = store;
+
 let performanceChart = null;
 let activeTimerInterval = null;
 let currentPnlMode = 'PROFIT';
