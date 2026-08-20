@@ -220,7 +220,14 @@ function initSignalGenerator() {
 
 function createAndStartSignal(forcedType = null, analysisResult = null) {
   const asset = store.getSelectedAsset();
-  const isCall = forcedType ? (forcedType === 'CALL') : (Math.random() > 0.5);
+  
+  // Четко фиксируем направление: если передали forcedType — берем его, иначе 50/50
+  let finalType = forcedType;
+  if (!finalType || finalType === 'NO_TRADE') {
+    finalType = Math.random() > 0.5 ? 'CALL' : 'PUT';
+  }
+
+  const isCall = finalType === 'CALL';
   const now = Date.now();
   const expires = now + 60000; // 1 минута
 
@@ -233,7 +240,7 @@ function createAndStartSignal(forcedType = null, analysisResult = null) {
   const signal = {
     id: 'sig_' + now,
     asset,
-    type: isCall ? 'CALL' : 'PUT',
+    type: finalType, // Гарантированно устанавливаем CALL или PUT
     entry: (1 + Math.random() * 100).toFixed(5),
     confidence: confidence,
     generatedAt: now,

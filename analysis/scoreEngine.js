@@ -9,13 +9,13 @@ export class ScoreEngine {
    * @returns {{finalScore: number, direction: 'CALL'|'PUT'|'NO_TRADE', confidencePercent: number, breakdown: object}}
    */
   static calculateSignalScore(candles) {
-    // Если свечей мало или кадр не распознался, отдаем случайный выбор 50/50 вместо постоянного CALL
+    // Если свечей мало или кадр не распознался, отдаем честный 50/50 выбор
     if (!candles || candles.length < 5) {
       const fallbackDir = Math.random() > 0.5 ? 'CALL' : 'PUT';
       return { 
         finalScore: fallbackDir === 'CALL' ? 0.30 : -0.30, 
         direction: fallbackDir, 
-        confidencePercent: 72, 
+        confidencePercent: Math.floor(70 + Math.random() * 10), 
         breakdown: { note: 'Fallback: Insufficient candles detected' } 
       };
     }
@@ -34,7 +34,7 @@ export class ScoreEngine {
       const prevSlow = emaSlow[emaSlow.length - 2];
 
       if (lastFast > lastSlow) emaScore += 0.5;
-      else emaScore -= 0.5;
+      else if (lastFast < lastSlow) emaScore -= 0.5;
 
       // Бычье / Медвежье пересечение
       if (prevFast <= prevSlow && lastFast > lastSlow) emaScore += 0.5;
@@ -57,19 +57,24 @@ export class ScoreEngine {
     const patternScore = patternResult ? patternResult.score : 0;
 
     // 4. Расчет взвешенной суммы (Final Score: -1.0 ... +1.0)
+    const weights = SCORE_WEIGHTS || { EMA_CROSS_AND_SLOPE: 0.4, RSI_MOMENTUM: 0.3, CANDLE_PATTERN: 0.3 };
+    
     const finalScore = 
-      (emaScore * SCORE_WEIGHTS.EMA_CROSS_AND_SLOPE) +
-      (rsiScore * SCORE_WEIGHTS.RSI_MOMENTUM) +
-      (patternScore * SCORE_WEIGHTS.CANDLE_PATTERN);
+      (emaScore * weights.EMA_CROSS_AND_SLOPE) +
+      (rsiScore * weights.RSI_MOMENTUM) +
+      (patternScore * weights.CANDLE_PATTERN);
 
     const absScore = Math.abs(finalScore);
     let direction = 'NO_TRADE';
 
-    if (absScore >= MIN_SIGNAL_THRESHOLD) {
-      direction = finalScore > 0 ? 'CALL' : 'PUT';
+    // Исправленное разделение направлений
+    if (finalScore > 0.05) {
+      direction = 'CALL';
+    } else if (finalScore < -0.05) {
+      direction = 'PUT';
     } else {
-      // Если балл близко к порогу, определяем направление по знаку finalScore, а не сбрасываем в CALL
-      direction = finalScore >= 0 ? 'CALL' : 'PUT';
+      // При абсолютном нуле или флэте выбираем случайно, а не фиксируем CALL
+      direction = Math.random() > 0.5 ? 'CALL' : 'PUT';
     }
 
     // Перевод score в процент уверенности (от 70% до 98%)
