@@ -1,10 +1,10 @@
-// store.js - State Engine
-const STORAGE_KEY = 'BEYBARS_BOT_STATE_V2';
+// store.js - State Engine (v3.0 с поддержкой REFUND и глубинного анализа)
+const STORAGE_KEY = 'BEYBARS_BOT_STATE_V3';
 
 const defaultState = {
-  activeSignal: null, // { id, asset, type, entry, confidence, generatedAt, expirationAt, status, factors }
+  activeSignal: null, // { id, asset, type, entry, confidence, generatedAt, expirationAt, status, factors, analysisSnapshot }
   signalsHistory: [],
-  dailySessions: [], // { id, date, trades, wins, losses, winRate, pnl }
+  dailySessions: [], // { id, date, trades, wins, losses, refunds, winRate, pnl }
   selectedAsset: 'EUR/USD OTC'
 };
 
@@ -57,38 +57,50 @@ class AppStore {
   }
 
   resolveSignalResult(signalId, result) {
+    // result может быть: 'WIN', 'LOSS', 'REFUND' (или 'RETURN')
+    const normalizedResult = (result === 'RETURN') ? 'REFUND' : result;
+
     if (this.state.activeSignal && this.state.activeSignal.id === signalId) {
       this.state.activeSignal.status = 'COMPLETED';
-      this.state.activeSignal.result = result;
+      this.state.activeSignal.result = normalizedResult;
       this.addSignalToHistory({ ...this.state.activeSignal });
       this.state.activeSignal = null;
     } else {
       const item = this.state.signalsHistory.find(s => s.id === signalId);
-      if (item) item.result = result;
+      if (item) item.result = normalizedResult;
     }
     this.saveState();
   }
 
   // Расчет общей статистики по сигналам
   getOverallStats() {
-    const completed = this.state.signalsHistory.filter(s => s.result === 'WIN' || s.result === 'LOSS');
+    const completed = this.state.signalsHistory.filter(s => ['WIN', 'LOSS', 'REFUND'].includes(s.result));
     const wins = completed.filter(s => s.result === 'WIN').length;
     const losses = completed.filter(s => s.result === 'LOSS').length;
-    const total = completed.length;
-    const winRate = total > 0 ? ((wins / total) * 100).toFixed(2) : "0.00";
+    const refunds = completed.filter(s => s.result === 'REFUND').length;
+    
+    // Эффективные сделки без учета возврата для честного Win Rate
+    const effectiveTotal = wins + losses;
+    const winRate = effectiveTotal > 0 ? ((wins / effectiveTotal) * 100).toFixed(2) : "0.00";
 
     const callSignals = completed.filter(s => s.type === 'CALL');
     const callWins = callSignals.filter(s => s.result === 'WIN').length;
-    const callWinRate = callSignals.length > 0 ? ((callWins / callSignals.length) * 100).toFixed(1) : "0.0";
+    const callLosses = callSignals.filter(s => s.result === 'LOSS').length;
+    const callEffective = callWins + callLosses;
+    const callWinRate = callEffective > 0 ? ((callWins / callEffective) * 100).toFixed(1) : "0.0";
 
     const putSignals = completed.filter(s => s.type === 'PUT');
     const putWins = putSignals.filter(s => s.result === 'WIN').length;
-    const putWinRate = putSignals.length > 0 ? ((putWins / putSignals.length) * 100).toFixed(1) : "0.0";
+    const putLosses = putSignals.filter(s => s.result === 'LOSS').length;
+    const putEffective = putWins + putLosses;
+    const putWinRate = putEffective > 0 ? ((putWins / putEffective) * 100).toFixed(1) : "0.0";
 
     return {
-      total,
+      total: completed.length,
+      effectiveTotal,
       wins,
       losses,
+      refunds,
       winRate: parseFloat(winRate),
       callCount: callSignals.length,
       callWinRate,
@@ -102,21 +114,24 @@ class AppStore {
     const todayStr = new Date().toISOString().split('T')[0];
     const todayCompleted = this.state.signalsHistory.filter(s => {
       const dateStr = new Date(s.generatedAt).toISOString().split('T')[0];
-      return dateStr === todayStr && (s.result === 'WIN' || s.result === 'LOSS');
+      return dateStr === todayStr && ['WIN', 'LOSS', 'REFUND'].includes(s.result);
     });
 
     const wins = todayCompleted.filter(s => s.result === 'WIN').length;
     const losses = todayCompleted.filter(s => s.result === 'LOSS').length;
+    const refunds = todayCompleted.filter(s => s.result === 'REFUND').length;
     const trades = todayCompleted.length;
-    const winRate = trades > 0 ? ((wins / trades) * 100).toFixed(2) : "0.00";
+    
+    const effectiveTrades = wins + losses;
+    const winRate = effectiveTrades > 0 ? ((wins / effectiveTrades) * 100).toFixed(2) : "0.00";
 
-    // Ищем сохраненную сегодня сессию, если есть
     const todaySession = this.state.dailySessions.find(ds => ds.date === todayStr);
 
     return {
       trades,
       wins,
       losses,
+      refunds,
       winRate: parseFloat(winRate),
       pnl: todaySession ? todaySession.pnl : 0
     };
@@ -139,11 +154,11 @@ class AppStore {
       trades: stats.trades,
       wins: stats.wins,
       losses: stats.losses,
+      refunds: stats.refunds,
       winRate: stats.winRate,
       pnl: parseFloat(pnlValue)
     };
 
-    // Заменяем если за сегодня уже закрывали
     const existingIndex = this.state.dailySessions.findIndex(s => s.date === todayStr);
     if (existingIndex >= 0) {
       this.state.dailySessions[existingIndex] = newSession;
@@ -155,24 +170,35 @@ class AppStore {
     return newSession;
   }
 
-  getAssetStats() {
-    const map = {};
-    const completed = this.state.signalsHistory.filter(s => s.result === 'WIN' || s.result === 'LOSS');
+  // Расширенная аналитика для отображения и адаптивного обучения
+  getDetailedAnalytics() {
+    const history = this.state.signalsHistory.filter(s => ['WIN', 'LOSS'].includes(s.result));
     
-    completed.forEach(s => {
-      if (!map[s.asset]) {
-        map[s.asset] = { trades: 0, wins: 0, losses: 0 };
+    const regimeStats = {};
+    const scoreRangeStats = { '0.4-0.6': { w: 0, l: 0 }, '0.6-0.8': { w: 0, l: 0 }, '0.8-1.0': { w: 0, l: 0 } };
+
+    history.forEach(sig => {
+      const snap = sig.analysisSnapshot;
+      if (!snap) return;
+
+      // По режимам рынка
+      const regime = snap.marketRegime || 'UNKNOWN';
+      if (!regimeStats[regime]) regimeStats[regime] = { wins: 0, losses: 0 };
+      if (sig.result === 'WIN') regimeStats[regime].wins++;
+      else regimeStats[regime].losses++;
+
+      // По диапазону Score
+      const absScore = Math.abs(snap.finalScore || 0);
+      if (absScore >= 0.8) {
+        if (sig.result === 'WIN') scoreRangeStats['0.8-1.0'].w++; else scoreRangeStats['0.8-1.0'].l++;
+      } else if (absScore >= 0.6) {
+        if (sig.result === 'WIN') scoreRangeStats['0.6-0.8'].w++; else scoreRangeStats['0.6-0.8'].l++;
+      } else if (absScore >= 0.4) {
+        if (sig.result === 'WIN') scoreRangeStats['0.4-0.6'].w++; else scoreRangeStats['0.4-0.6'].l++;
       }
-      map[s.asset].trades++;
-      if (s.result === 'WIN') map[s.asset].wins++;
-      else map[s.asset].losses++;
     });
 
-    return Object.keys(map).map(asset => {
-      const item = map[asset];
-      const winRate = ((item.wins / item.trades) * 100).toFixed(1);
-      return { asset, trades: item.trades, winRate: parseFloat(winRate) };
-    });
+    return { regimeStats, scoreRangeStats };
   }
 }
 
