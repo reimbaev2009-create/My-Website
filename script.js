@@ -2,14 +2,12 @@ import { ChartAnalyzer } from './chartAnalyzer.js';
 import { OTC_FOREX_ASSETS } from './assets.js';
 import { store } from './store.js';
 
-// Экспортируем store в глобальное окно браузера для отладки через консоль F12
 window.store = store;
 
 let performanceChart = null;
 let activeTimerInterval = null;
 let currentPnlMode = 'PROFIT';
 
-// Глобальные переменные для Screen Capture API
 let screenStream = null;
 let screenVideo = null;
 
@@ -29,25 +27,22 @@ document.addEventListener('DOMContentLoaded', () => {
     lucide.createIcons();
   }
   
-  initScreenVideoElement(); // Создаем скрытый видеоэлемент для потока
+  initScreenVideoElement();
   initNavigation();
   initAssetSelector();
-  initScreenCaptureLogic(); // Логика кнопки ПОДКЛЮЧИТЬ POCKET OPTION
+  initScreenCaptureLogic();
   initSignalGenerator();
   initModalLogic();
   
-  // Проверка активного сигнала после перезагрузки
   checkActiveSignalOnLoad();
-  
-  // Обновление UI
   renderUI();
 });
 
-// Создаем служебный скрытый видеотег для обработки кадров
 function initScreenVideoElement() {
   screenVideo = document.createElement('video');
   screenVideo.autoplay = true;
   screenVideo.playsInline = true;
+  screenVideo.muted = true;
   screenVideo.style.display = 'none';
   document.body.appendChild(screenVideo);
 }
@@ -83,7 +78,7 @@ function initNavigation() {
   });
 }
 
-// 2. Выбор OTC Актива
+// 2. Выбор OTC Актива (Оптимизирован с использованием Делегирования событий)
 function initAssetSelector() {
   const toggleBtn = document.getElementById('selectorToggleBtn');
   const dropdown = document.getElementById('assetDropdown');
@@ -110,21 +105,23 @@ function initAssetSelector() {
     }
   });
 
+  // Делегирование клика
+  container.addEventListener('click', (e) => {
+    const item = e.target.closest('.asset-item');
+    if (item && item.dataset.asset) {
+      const asset = item.dataset.asset;
+      store.setSelectedAsset(asset);
+      if (selectedLabel) selectedLabel.textContent = asset;
+      dropdown.classList.remove('active');
+    }
+  });
+
   function renderList(filter = '') {
-    container.innerHTML = '';
     const filtered = (OTC_FOREX_ASSETS || []).filter(a => a.toLowerCase().includes(filter.toLowerCase()));
     
-    filtered.forEach(asset => {
-      const item = document.createElement('div');
-      item.className = 'asset-item';
-      item.textContent = asset;
-      item.addEventListener('click', () => {
-        store.setSelectedAsset(asset);
-        if (selectedLabel) selectedLabel.textContent = asset;
-        dropdown.classList.remove('active');
-      });
-      container.appendChild(item);
-    });
+    container.innerHTML = filtered.map(asset => 
+      `<div class="asset-item" data-asset="${asset}">${asset}</div>`
+    ).join('');
   }
 
   if (searchInput) {
@@ -133,7 +130,7 @@ function initAssetSelector() {
   renderList();
 }
 
-// 3. Подключение Screen Capture (Pocket Option)
+// 3. Подключение Screen Capture (Без утечек медиапотоков)
 function initScreenCaptureLogic() {
   const btnConnect = document.getElementById('btnConnectPocket');
   const captureStatus = document.getElementById('captureStatus');
@@ -142,6 +139,11 @@ function initScreenCaptureLogic() {
 
   btnConnect.addEventListener('click', async () => {
     try {
+      // Очищаем предыдущий стрим, если он существовал
+      if (screenStream) {
+        screenStream.getTracks().forEach(track => track.stop());
+      }
+
       screenStream = await navigator.mediaDevices.getDisplayMedia({
         video: { displaySurface: "browser", frameRate: { max: 30 } },
         audio: false
@@ -177,8 +179,8 @@ function initSignalGenerator() {
   genBtn.addEventListener('click', () => {
     if (store.getActiveSignal()) return;
 
-    if (!screenStream || !screenVideo.videoWidth) {
-      alert("Сначала нажмите 'ПОДКЛЮЧИТЬ POCKET OPTION' и выберите окно с графиком!");
+    if (!screenStream || !screenVideo.videoWidth || screenVideo.readyState < 2) {
+      alert("Сначала нажмите 'ПОДКЛЮЧИТЬ POCKET OPTION' и убедитесь, что трансляция активна!");
       return;
     }
 
@@ -188,15 +190,18 @@ function initSignalGenerator() {
     const displayBox = document.getElementById('activeSignalDisplay');
     if (displayBox) displayBox.style.display = 'none';
 
-    // Равномерный случайный дефолт (50/50), если анализ не вернул четкого направления
     let detectedSignalType = Math.random() > 0.5 ? 'CALL' : 'PUT'; 
     let analysisResult = null;
 
-    if (snapshotCanvas && screenVideo) {
-      analysisResult = ChartAnalyzer.processCurrentFrame(screenVideo, snapshotCanvas);
-      if (analysisResult && analysisResult.signal && analysisResult.signal.direction !== 'NO_TRADE') {
-        detectedSignalType = analysisResult.signal.direction;
+    try {
+      if (snapshotCanvas && screenVideo) {
+        analysisResult = ChartAnalyzer.processCurrentFrame(screenVideo, snapshotCanvas);
+        if (analysisResult && analysisResult.signal && analysisResult.signal.direction !== 'NO_TRADE') {
+          detectedSignalType = analysisResult.signal.direction;
+        }
       }
+    } catch (e) {
+      console.error("Ошибка анализа кадра:", e);
     }
 
     let currentStep = 0;
@@ -212,7 +217,7 @@ function initSignalGenerator() {
         setTimeout(() => {
           scannerBox.classList.remove('active');
           createAndStartSignal(detectedSignalType, analysisResult);
-        }, 500);
+        }, 300);
       }
     }, 250);
   });
@@ -221,7 +226,6 @@ function initSignalGenerator() {
 function createAndStartSignal(forcedType = null, analysisResult = null) {
   const asset = store.getSelectedAsset();
   
-  // Четко фиксируем направление: если передали forcedType — берем его, иначе 50/50
   let finalType = forcedType;
   if (!finalType || finalType === 'NO_TRADE') {
     finalType = Math.random() > 0.5 ? 'CALL' : 'PUT';
@@ -229,9 +233,8 @@ function createAndStartSignal(forcedType = null, analysisResult = null) {
 
   const isCall = finalType === 'CALL';
   const now = Date.now();
-  const expires = now + 60000; // 1 минута
+  const expires = now + 60000;
 
-  // Данные анализа из движка
   const signalInfo = analysisResult ? analysisResult.signal : null;
   const breakdown = signalInfo ? signalInfo.breakdown : {};
 
@@ -240,7 +243,7 @@ function createAndStartSignal(forcedType = null, analysisResult = null) {
   const signal = {
     id: 'sig_' + now,
     asset,
-    type: finalType, // Гарантированно устанавливаем CALL или PUT
+    type: finalType,
     entry: (1 + Math.random() * 100).toFixed(5),
     confidence: confidence,
     generatedAt: now,
@@ -308,22 +311,24 @@ function renderActiveSignal(signal) {
     `).join('');
   }
 
-  // Обновление UI блока кнопок результатов (WIN / LOSS / REFUND)
-  ensureResultButtonsExist();
-
+  bindResultButtons();
   startSignalTimer(signal);
 }
 
-// Гарантируем наличие трех кнопок результата (WIN, LOSS, REFUND)
-function ensureResultButtonsExist() {
+// Привязка событий обработчика результатов (Чистый JS без inline inline-onclick)
+function bindResultButtons() {
   const resultBtnRow = document.getElementById('resultBtnRow');
   if (!resultBtnRow) return;
 
   resultBtnRow.innerHTML = `
-    <button onclick="handleSignalResult('WIN')" class="btn-res btn-win" style="flex:1; padding:10px; background:#10b981; color:#fff; border:none; border-radius:8px; font-weight:700; cursor:pointer;">WIN</button>
-    <button onclick="handleSignalResult('LOSS')" class="btn-res btn-loss" style="flex:1; padding:10px; background:#ef4444; color:#fff; border:none; border-radius:8px; font-weight:700; cursor:pointer;">LOSS</button>
-    <button onclick="handleSignalResult('REFUND')" class="btn-res btn-refund" style="flex:1; padding:10px; background:#64748b; color:#fff; border:none; border-radius:8px; font-weight:700; cursor:pointer;">REFUND</button>
+    <button data-res="WIN" class="btn-res btn-win" style="flex:1; padding:10px; background:#10b981; color:#fff; border:none; border-radius:8px; font-weight:700; cursor:pointer;">WIN</button>
+    <button data-res="LOSS" class="btn-res btn-loss" style="flex:1; padding:10px; background:#ef4444; color:#fff; border:none; border-radius:8px; font-weight:700; cursor:pointer;">LOSS</button>
+    <button data-res="REFUND" class="btn-res btn-refund" style="flex:1; padding:10px; background:#64748b; color:#fff; border:none; border-radius:8px; font-weight:700; cursor:pointer;">REFUND</button>
   `;
+
+  resultBtnRow.querySelectorAll('.btn-res').forEach(btn => {
+    btn.onclick = () => window.handleSignalResult(btn.dataset.res);
+  });
 }
 
 function startSignalTimer(signal) {
@@ -358,7 +363,7 @@ function startSignalTimer(signal) {
       const progressFraction = (60000 - remainingMs) / 60000;
       progressCircle.style.strokeDashoffset = circumference * progressFraction;
     }
-  }, 200);
+  }, 300);
 }
 
 window.handleSignalResult = function(result) {
@@ -378,7 +383,6 @@ window.handleSignalResult = function(result) {
   renderUI();
 };
 
-// Функция полной очистки истории сигналов с подтверждением
 window.resetSignalsHistory = function() {
   if (confirm("Вы уверены, что хотите полностью очистить историю сигналов?")) {
     store.resetSignalsHistory();
@@ -405,7 +409,7 @@ function checkActiveSignalOnLoad() {
   }
 }
 
-// 5. Модальное окно и заведение сессии P&L
+// 5. Модальное окно и P&L
 function initModalLogic() {
   const triggerBtn = document.getElementById('btn-end-session-trigger');
   const modal = document.getElementById('endSessionModal');
@@ -446,7 +450,7 @@ function initModalLogic() {
   };
 }
 
-// 6. Рендеринг интерфейса
+// 6. Рендеринг UI
 function renderUI() {
   const overall = store.getOverallStats();
   const today = store.getTodayStats();
@@ -544,6 +548,10 @@ function renderChart() {
 
   if (sessions.length === 0) {
     canvas.style.display = 'none';
+    if (performanceChart) {
+      performanceChart.destroy();
+      performanceChart = null;
+    }
     return;
   }
 

@@ -166,8 +166,17 @@
             </div>
           </div>
 
-          <div style="margin-bottom: 20px; font-size: 13px; color: var(--text-muted);">
-            Expiration: <strong style="color: #fff;">1 MINUTE</strong>
+          <!-- EXPIRATION TIME SELECTOR (30s / 1m) -->
+          <div style="margin-bottom: 20px;">
+            <label style="font-size: 12px; color: var(--text-muted); display: block; margin-bottom: 8px;">EXPIRATION TIME</label>
+            <div style="display: flex; gap: 10px; background: rgba(255, 255, 255, 0.03); padding: 4px; border-radius: 10px; border: 1px solid var(--panel-border, rgba(255, 255, 255, 0.08));">
+              <button type="button" class="expiration-btn active" id="exp-30s" data-time="30" style="flex: 1; padding: 10px; border: none; border-radius: 8px; background: var(--accent-blue, #06b6d4); color: #fff; font-weight: 700; font-size: 13px; cursor: pointer; transition: 0.2s; display: flex; align-items: center; justify-content: center; gap: 6px;">
+                <i data-lucide="timer" style="width: 15px; height: 15px;"></i> 30 SEC
+              </button>
+              <button type="button" class="expiration-btn" id="exp-1m" data-time="60" style="flex: 1; padding: 10px; border: none; border-radius: 8px; background: transparent; color: var(--text-muted); font-weight: 700; font-size: 13px; cursor: pointer; transition: 0.2s; display: flex; align-items: center; justify-content: center; gap: 6px;">
+                <i data-lucide="clock" style="width: 15px; height: 15px;"></i> 1 MIN
+              </button>
+            </div>
           </div>
 
           <button class="btn-generate-main" id="generateSignalBtn">
@@ -191,14 +200,14 @@
               <span id="sigAsset" style="font-size: 16px; font-weight: 700; color: var(--text-muted);">EUR/USD OTC</span>
               <div class="signal-type-badge CALL" id="sigTypeBadge">CALL ↑</div>
               
-              <div style="font-size: 12px; color: var(--text-muted);">Expiration: 1 MIN | Confidence: <strong id="sigConf">84%</strong> | Entry: <strong id="sigEntry">1.08450</strong></div>
+              <div style="font-size: 12px; color: var(--text-muted);">Expiration: <strong id="sigExpirationDisplay" style="color: #fff;">30 SEC</strong> | Confidence: <strong id="sigConf">84%</strong> | Entry: <strong id="sigEntry">1.08450</strong></div>
 
               <div class="circular-timer-wrapper">
                 <svg class="timer-svg">
                   <circle class="timer-circle-bg" cx="60" cy="60" r="54"></circle>
                   <circle class="timer-circle-progress" id="timerProgressCircle" cx="60" cy="60" r="54"></circle>
                 </svg>
-                <div class="timer-time-text" id="timerText">01:00</div>
+                <div class="timer-time-text" id="timerText">00:30</div>
               </div>
 
               <div id="signalStatusText" style="font-size: 13px; font-weight: 700; color: var(--accent-purple);">SIGNAL ACTIVE</div>

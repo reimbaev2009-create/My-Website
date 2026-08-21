@@ -16,7 +16,7 @@ export const ANALYSIS_CONFIG = {
     }
   },
 
-  // Параметры технических индикаторов
+  // Настройки индикаторов по умолчанию (1m)
   INDICATORS: {
     EMA_FAST_PERIOD: 9,
     EMA_SLOW_PERIOD: 21,
@@ -24,6 +24,26 @@ export const ANALYSIS_CONFIG = {
     RSI_OVERBOUGHT: 70,
     RSI_OVERSOLD: 30,
     ATR_PERIOD: 14
+  },
+
+  // Специализированные конфиги индикаторов под разные таймфреймы
+  TIMEFRAME_CONFIGS: {
+    '30s': {
+      durationMs: 30000,
+      EMA_FAST_PERIOD: 5,
+      EMA_SLOW_PERIOD: 13,
+      RSI_PERIOD: 7,
+      RSI_OVERBOUGHT: 70,
+      RSI_OVERSOLD: 30
+    },
+    '1m': {
+      durationMs: 60000,
+      EMA_FAST_PERIOD: 9,
+      EMA_SLOW_PERIOD: 21,
+      RSI_PERIOD: 14,
+      RSI_OVERBOUGHT: 70,
+      RSI_OVERSOLD: 30
+    }
   },
 
   // Весовая модель факторов для Score Engine (Нормализована до суммарных 1.0)

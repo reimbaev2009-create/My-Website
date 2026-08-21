@@ -7,7 +7,12 @@ export class CandleDetector {
    * @returns {Array<{x: number, open: number, high: number, low: number, close: number, isBullish: boolean, bodySize: number, wickTop: number, wickBottom: number}>}
    */
   static extractCandles(detectionData) {
-    const { greenPixels, redPixels, height } = detectionData;
+    if (!detectionData) return [];
+
+    const { greenPixels = [], redPixels = [], height = 0 } = detectionData;
+    
+    if (height <= 0) return [];
+
     const allPixels = [
       ...greenPixels.map(p => ({ ...p, isBullish: true })),
       ...redPixels.map(p => ({ ...p, isBullish: false }))
@@ -27,14 +32,14 @@ export class CandleDetector {
       columnsMap.get(bucketX).push(p);
     });
 
-    // Sort columns by X coordinate (left to right)
+    // Сортировка колонок слева направо
     const sortedX = Array.from(columnsMap.keys()).sort((a, b) => a - b);
     const rawCandles = [];
 
     // 2. Обработка каждой колонки пикселей
     sortedX.forEach(x => {
       const pixels = columnsMap.get(x);
-      if (pixels.length < 6) return; // Игнорируем шумы и мелкие точки UI
+      if (!pixels || pixels.length < 6) return; // Игнорируем шумы и мелкие элементы интерфейса
 
       let minY = height; // На экране top = 0, поэтому min Y = High свечи
       let maxY = 0;      // max Y = Low свечи
@@ -51,8 +56,8 @@ export class CandleDetector {
       const isBullish = greenCount >= redCount;
 
       // Нормализуем Y в условные цены (инвертируем Y, так как 0 находится вверху)
-      const highPrice = height - minY;
-      const lowPrice = height - maxY;
+      const highPrice = Math.max(0, height - minY);
+      const lowPrice = Math.max(0, height - maxY);
 
       // Оценка размера тела на основе концентрации пикселей
       const totalSpan = Math.max(1, maxY - minY);
@@ -68,6 +73,9 @@ export class CandleDetector {
         closePrice = openPrice - bodyLength;
       }
 
+      const topWick = Math.max(0, highPrice - Math.max(openPrice, closePrice));
+      const bottomWick = Math.max(0, Math.min(openPrice, closePrice) - lowPrice);
+
       rawCandles.push({
         x,
         open: parseFloat(openPrice.toFixed(2)),
@@ -76,8 +84,8 @@ export class CandleDetector {
         close: parseFloat(closePrice.toFixed(2)),
         isBullish,
         bodySize: parseFloat(Math.abs(closePrice - openPrice).toFixed(2)),
-        wickTop: parseFloat((highPrice - Math.max(openPrice, closePrice)).toFixed(2)),
-        wickBottom: parseFloat((Math.min(openPrice, closePrice) - lowPrice).toFixed(2))
+        wickTop: parseFloat(topWick.toFixed(2)),
+        wickBottom: parseFloat(bottomWick.toFixed(2))
       });
     });
 
@@ -89,7 +97,7 @@ export class CandleDetector {
    * Слияние соседних колонок одного графического элемента
    */
   static mergeAdjacentCandleColumns(candles) {
-    if (candles.length === 0) return [];
+    if (!candles || candles.length === 0) return [];
 
     const merged = [];
     let current = candles[0];

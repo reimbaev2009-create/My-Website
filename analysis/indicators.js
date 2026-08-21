@@ -9,7 +9,7 @@ export class IndicatorEngine {
    * @returns {Array<number>}
    */
   static calculateEMA(candles, period) {
-    if (candles.length < period) return [];
+    if (!candles || candles.length < period || period <= 0) return [];
     const k = 2 / (period + 1);
     const closes = candles.map(c => c.close);
     
@@ -27,32 +27,35 @@ export class IndicatorEngine {
   /**
    * Расчет индекса относительной силы (RSI)
    * @param {Array<{close: number}>} candles 
-   * @param {number} period 
+   * @param {number} [period] 
    * @returns {number} Значение RSI (0 - 100)
    */
-  static calculateRSI(candles, period = ANALYSIS_CONFIG.INDICATORS.RSI_PERIOD) {
-    if (candles.length <= period) return 50;
+  static calculateRSI(candles, period) {
+    const defaultPeriod = ANALYSIS_CONFIG?.INDICATORS?.RSI_PERIOD || 14;
+    const activePeriod = (period && period > 0) ? period : defaultPeriod;
+
+    if (!candles || candles.length <= activePeriod) return 50;
 
     const closes = candles.map(c => c.close);
     let gains = 0;
     let losses = 0;
 
-    for (let i = 1; i <= period; i++) {
+    for (let i = 1; i <= activePeriod; i++) {
       const diff = closes[i] - closes[i - 1];
       if (diff >= 0) gains += diff;
       else losses += Math.abs(diff);
     }
 
-    let avgGain = gains / period;
-    let avgLoss = losses / period;
+    let avgGain = gains / activePeriod;
+    let avgLoss = losses / activePeriod;
 
-    for (let i = period + 1; i < closes.length; i++) {
+    for (let i = activePeriod + 1; i < closes.length; i++) {
       const diff = closes[i] - closes[i - 1];
       const gain = diff >= 0 ? diff : 0;
       const loss = diff < 0 ? Math.abs(diff) : 0;
 
-      avgGain = (avgGain * (period - 1) + gain) / period;
-      avgLoss = (avgLoss * (period - 1) + loss) / period;
+      avgGain = (avgGain * (activePeriod - 1) + gain) / activePeriod;
+      avgLoss = (avgLoss * (activePeriod - 1) + loss) / activePeriod;
     }
 
     if (avgLoss === 0) return 100;
@@ -62,27 +65,33 @@ export class IndicatorEngine {
 
   /**
    * Распознавание Price Action паттернов (Engulfing, Pinbar)
-   * @param {Array<{open: number, high: number, low: number, close: number, isBullish: boolean, wickTop: number, wickBottom: number}>} candles 
+   * @param {Array<{open: number, high: number, low: number, close: number, isBullish: boolean, wickTop?: number, wickBottom?: number}>} candles 
    * @returns {{pattern: string, score: number}}
    */
   static detectPattern(candles) {
-    if (candles.length < 2) return { pattern: 'NONE', score: 0 };
+    if (!candles || candles.length < 2) return { pattern: 'NONE', score: 0 };
 
     const current = candles[candles.length - 1];
     const prev = candles[candles.length - 2];
 
+    // Bullish Engulfing
     if (!prev.isBullish && current.isBullish && current.close > prev.open && current.open < prev.close) {
       return { pattern: 'BULLISH_ENGULFING', score: 0.8 };
     }
+    // Bearish Engulfing
     if (prev.isBullish && !current.isBullish && current.close < prev.open && current.open > prev.close) {
       return { pattern: 'BEARISH_ENGULFING', score: -0.8 };
     }
 
+    // Pinbar detection
     const totalHeight = Math.max(0.001, current.high - current.low);
-    if (current.wickBottom / totalHeight > 0.6) {
+    const wickBottom = current.wickBottom !== undefined ? current.wickBottom : Math.min(current.open, current.close) - current.low;
+    const wickTop = current.wickTop !== undefined ? current.wickTop : current.high - Math.max(current.open, current.close);
+
+    if (wickBottom / totalHeight > 0.6) {
       return { pattern: 'BULLISH_PINBAR', score: 0.6 };
     }
-    if (current.wickTop / totalHeight > 0.6) {
+    if (wickTop / totalHeight > 0.6) {
       return { pattern: 'BEARISH_PINBAR', score: -0.6 };
     }
 

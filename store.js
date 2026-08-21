@@ -1,11 +1,12 @@
-// store.js - State Engine (v3.0 с поддержкой REFUND, сброса и глубинного анализа)
+// store.js - State Engine (v3.1 с поддержкой 30s/1m таймфреймов, REFUND, сброса и аналитики)
 const STORAGE_KEY = 'BEYBARS_BOT_STATE_V3';
 
 const defaultState = {
-  activeSignal: null, // { id, asset, type, entry, confidence, generatedAt, expirationAt, status, factors, analysisSnapshot }
+  activeSignal: null, // { id, asset, timeframe, type, entry, confidence, generatedAt, expirationAt, status, factors, analysisSnapshot }
   signalsHistory: [],
-  dailySessions: [], // { id, date, trades, wins, losses, refunds, winRate, pnl }
-  selectedAsset: 'EUR/USD OTC'
+  dailySessions: [],  // { id, date, displayDate, trades, wins, losses, refunds, winRate, pnl }
+  selectedAsset: 'EUR/USD OTC',
+  selectedTimeframe: '30s' // По умолчанию включен быстрый таймфрейм 30s
 };
 
 class AppStore {
@@ -33,6 +34,8 @@ class AppStore {
     }
   }
 
+  // --- Управление активами и таймфреймами ---
+
   getSelectedAsset() {
     return this.state.selectedAsset;
   }
@@ -41,6 +44,17 @@ class AppStore {
     this.state.selectedAsset = asset;
     this.saveState();
   }
+
+  getSelectedTimeframe() {
+    return this.state.selectedTimeframe || '30s';
+  }
+
+  setSelectedTimeframe(tf) {
+    this.state.selectedTimeframe = tf;
+    this.saveState();
+  }
+
+  // --- Управление сигналами ---
 
   getActiveSignal() {
     return this.state.activeSignal;
@@ -52,11 +66,18 @@ class AppStore {
   }
 
   addSignalToHistory(signal) {
-    this.state.signalsHistory.unshift(signal);
+    // Предотвращение дубликатов по ID
+    const exists = this.state.signalsHistory.some(s => s.id === signal.id);
+    if (!exists) {
+      this.state.signalsHistory.unshift(signal);
+    } else {
+      const idx = this.state.signalsHistory.findIndex(s => s.id === signal.id);
+      if (idx !== -1) this.state.signalsHistory[idx] = signal;
+    }
     this.saveState();
   }
 
-  // Метод для полной очистки истории сигналов
+  // Очистка истории сигналов
   resetSignalsHistory() {
     this.state.signalsHistory = [];
     this.state.activeSignal = null;
@@ -64,7 +85,7 @@ class AppStore {
   }
 
   resolveSignalResult(signalId, result) {
-    // result может быть: 'WIN', 'LOSS', 'REFUND' (или 'RETURN')
+    // Нормализация результатов: WIN, LOSS, REFUND (RETURN -> REFUND)
     const normalizedResult = (result === 'RETURN') ? 'REFUND' : result;
 
     if (this.state.activeSignal && this.state.activeSignal.id === signalId) {
@@ -74,19 +95,23 @@ class AppStore {
       this.state.activeSignal = null;
     } else {
       const item = this.state.signalsHistory.find(s => s.id === signalId);
-      if (item) item.result = normalizedResult;
+      if (item) {
+        item.result = normalizedResult;
+        item.status = 'COMPLETED';
+      }
     }
     this.saveState();
   }
 
-  // Расчет общей статистики по сигналам
+  // --- Расчет статистики ---
+
   getOverallStats() {
     const completed = this.state.signalsHistory.filter(s => ['WIN', 'LOSS', 'REFUND'].includes(s.result));
     const wins = completed.filter(s => s.result === 'WIN').length;
     const losses = completed.filter(s => s.result === 'LOSS').length;
     const refunds = completed.filter(s => s.result === 'REFUND').length;
     
-    // Эффективные сделки без учета возврата для честного Win Rate
+    // Чистый Win Rate без учета возвратов
     const effectiveTotal = wins + losses;
     const winRate = effectiveTotal > 0 ? ((wins / effectiveTotal) * 100).toFixed(2) : "0.00";
 
@@ -116,11 +141,11 @@ class AppStore {
     };
   }
 
-  // Статистика за текущую незакрытую сессию
   getTodayStats() {
-    const todayStr = new Date().toISOString().split('T')[0];
+    const todayStr = new Date().toLocaleDateString('en-CA'); // Формат YYYY-MM-DD в локальном часовом поясе
     const todayCompleted = this.state.signalsHistory.filter(s => {
-      const dateStr = new Date(s.generatedAt).toISOString().split('T')[0];
+      if (!s.generatedAt) return false;
+      const dateStr = new Date(s.generatedAt).toLocaleDateString('en-CA');
       return dateStr === todayStr && ['WIN', 'LOSS', 'REFUND'].includes(s.result);
     });
 
@@ -144,14 +169,12 @@ class AppStore {
     };
   }
 
-  // Расчет Total P&L
   getTotalPnL() {
     return this.state.dailySessions.reduce((acc, curr) => acc + (curr.pnl || 0), 0);
   }
 
-  // Завершение дневной сессии
   endDailySession(pnlValue) {
-    const todayStr = new Date().toISOString().split('T')[0];
+    const todayStr = new Date().toLocaleDateString('en-CA');
     const stats = this.getTodayStats();
 
     const newSession = {
@@ -177,7 +200,8 @@ class AppStore {
     return newSession;
   }
 
-  // Расширенная аналитика для отображения и адаптивного обучения
+  // --- Глубинный анализ рынка ---
+
   getDetailedAnalytics() {
     const history = this.state.signalsHistory.filter(s => ['WIN', 'LOSS'].includes(s.result));
     
@@ -188,13 +212,11 @@ class AppStore {
       const snap = sig.analysisSnapshot;
       if (!snap) return;
 
-      // По режимам рынка
       const regime = snap.marketRegime || 'UNKNOWN';
       if (!regimeStats[regime]) regimeStats[regime] = { wins: 0, losses: 0 };
       if (sig.result === 'WIN') regimeStats[regime].wins++;
       else regimeStats[regime].losses++;
 
-      // По диапазону Score
       const absScore = Math.abs(snap.finalScore || 0);
       if (absScore >= 0.8) {
         if (sig.result === 'WIN') scoreRangeStats['0.8-1.0'].w++; else scoreRangeStats['0.8-1.0'].l++;

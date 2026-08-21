@@ -50,11 +50,28 @@ export class ColorDetector {
    * @returns {{greenPixels: Array<{x: number, y: number}>, redPixels: Array<{x: number, y: number}>, width: number, height: number}}
    */
   static detectCandlePixels(imageData) {
+    if (!imageData || !imageData.data || !imageData.width || !imageData.height) {
+      return { greenPixels: [], redPixels: [], width: 0, height: 0 };
+    }
+
     const { width, height, data } = imageData;
     const greenPixels = [];
     const redPixels = [];
 
-    const { BULLISH_GREEN, BEARISH_RED } = ANALYSIS_CONFIG.COLOR_HSV_THRESHOLDS;
+    // Безопасное извлечение порогов с фоллбэком
+    const thresholds = ANALYSIS_CONFIG?.COLOR_HSV_THRESHOLDS || {};
+    const BULLISH_GREEN = thresholds.BULLISH_GREEN || {
+      hueMin: 110,
+      hueMax: 160,
+      satMin: 0.20,
+      valMin: 0.25
+    };
+    const BEARISH_RED = thresholds.BEARISH_RED || {
+      hueMinRange1: [0, 20],
+      hueMinRange2: [330, 360],
+      satMin: 0.20,
+      valMin: 0.25
+    };
 
     // Область анализа: фокусируемся на основной рабочей зоне графика (исключаем края)
     const minX = Math.floor(width * 0.10);
