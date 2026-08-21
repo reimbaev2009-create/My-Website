@@ -1,4 +1,4 @@
-// store.js - State Engine (v3.0 с поддержкой REFUND и глубинного анализа)
+// store.js - State Engine (v3.0 с поддержкой REFUND, сброса и глубинного анализа)
 const STORAGE_KEY = 'BEYBARS_BOT_STATE_V3';
 
 const defaultState = {
@@ -53,6 +53,13 @@ class AppStore {
 
   addSignalToHistory(signal) {
     this.state.signalsHistory.unshift(signal);
+    this.saveState();
+  }
+
+  // Метод для полной очистки истории сигналов
+  resetSignalsHistory() {
+    this.state.signalsHistory = [];
+    this.state.activeSignal = null;
     this.saveState();
   }
 

@@ -378,6 +378,22 @@ window.handleSignalResult = function(result) {
   renderUI();
 };
 
+// Функция полной очистки истории сигналов с подтверждением
+window.resetSignalsHistory = function() {
+  if (confirm("Вы уверены, что хотите полностью очистить историю сигналов?")) {
+    store.resetSignalsHistory();
+    if (activeTimerInterval) clearInterval(activeTimerInterval);
+    
+    const displayBox = document.getElementById('activeSignalDisplay');
+    if (displayBox) displayBox.style.display = 'none';
+
+    const genBtn = document.getElementById('generateSignalBtn');
+    if (genBtn) genBtn.disabled = false;
+
+    renderUI();
+  }
+};
+
 function checkActiveSignalOnLoad() {
   const activeSig = store.getActiveSignal();
   if (activeSig) {
