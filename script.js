@@ -7,6 +7,7 @@ window.store = store;
 let performanceChart = null;
 let activeTimerInterval = null;
 let currentPnlMode = 'PROFIT';
+let selectedExpirationTime = 30; // 30 секунд по умолчанию
 
 let screenStream = null;
 let screenVideo = null;
@@ -30,6 +31,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initScreenVideoElement();
   initNavigation();
   initAssetSelector();
+  initExpirationSelector(); // Инициализация кнопок 30s/1m
   initScreenCaptureLogic();
   initSignalGenerator();
   initModalLogic();
@@ -78,7 +80,7 @@ function initNavigation() {
   });
 }
 
-// 2. Выбор OTC Актива (Оптимизирован с использованием Делегирования событий)
+// 2. Выбор OTC Актива
 function initAssetSelector() {
   const toggleBtn = document.getElementById('selectorToggleBtn');
   const dropdown = document.getElementById('assetDropdown');
@@ -105,7 +107,6 @@ function initAssetSelector() {
     }
   });
 
-  // Делегирование клика
   container.addEventListener('click', (e) => {
     const item = e.target.closest('.asset-item');
     if (item && item.dataset.asset) {
@@ -130,7 +131,31 @@ function initAssetSelector() {
   renderList();
 }
 
-// 3. Подключение Screen Capture (Без утечек медиапотоков)
+// 3. Выбор времени экспирации (30 SEC / 1 MIN)
+function initExpirationSelector() {
+  const btn30s = document.getElementById('exp-30s');
+  const btn1m = document.getElementById('exp-1m');
+
+  if (!btn30s || !btn1m) return;
+
+  const setActiveBtn = (selectedBtn, activeTime) => {
+    [btn30s, btn1m].forEach(btn => {
+      btn.classList.remove('active');
+      btn.style.background = 'transparent';
+      btn.style.color = 'var(--text-muted)';
+    });
+
+    selectedBtn.classList.add('active');
+    selectedBtn.style.background = 'var(--accent-blue, #06b6d4)';
+    selectedBtn.style.color = '#fff';
+    selectedExpirationTime = activeTime;
+  };
+
+  btn30s.addEventListener('click', () => setActiveBtn(btn30s, 30));
+  btn1m.addEventListener('click', () => setActiveBtn(btn1m, 60));
+}
+
+// 4. Подключение Screen Capture
 function initScreenCaptureLogic() {
   const btnConnect = document.getElementById('btnConnectPocket');
   const captureStatus = document.getElementById('captureStatus');
@@ -139,7 +164,6 @@ function initScreenCaptureLogic() {
 
   btnConnect.addEventListener('click', async () => {
     try {
-      // Очищаем предыдущий стрим, если он существовал
       if (screenStream) {
         screenStream.getTracks().forEach(track => track.stop());
       }
@@ -166,7 +190,7 @@ function initScreenCaptureLogic() {
   });
 }
 
-// 4. AI Анимация, снимок экрана и генерация сигнала
+// 5. AI Анимация, снимок экрана и генерация сигнала
 function initSignalGenerator() {
   const genBtn = document.getElementById('generateSignalBtn');
   const scannerBox = document.getElementById('aiScannerBox');
@@ -195,7 +219,7 @@ function initSignalGenerator() {
 
     try {
       if (snapshotCanvas && screenVideo) {
-        analysisResult = ChartAnalyzer.processCurrentFrame(screenVideo, snapshotCanvas);
+        analysisResult = ChartAnalyzer.processCurrentFrame(screenVideo, snapshotCanvas, selectedExpirationTime === 30 ? '30s' : '1m');
         if (analysisResult && analysisResult.signal && analysisResult.signal.direction !== 'NO_TRADE') {
           detectedSignalType = analysisResult.signal.direction;
         }
@@ -233,7 +257,8 @@ function createAndStartSignal(forcedType = null, analysisResult = null) {
 
   const isCall = finalType === 'CALL';
   const now = Date.now();
-  const expires = now + 60000;
+  const durationMs = selectedExpirationTime * 1000;
+  const expires = now + durationMs;
 
   const signalInfo = analysisResult ? analysisResult.signal : null;
   const breakdown = signalInfo ? signalInfo.breakdown : {};
@@ -244,6 +269,7 @@ function createAndStartSignal(forcedType = null, analysisResult = null) {
     id: 'sig_' + now,
     asset,
     type: finalType,
+    expirationSec: selectedExpirationTime,
     entry: (1 + Math.random() * 100).toFixed(5),
     confidence: confidence,
     generatedAt: now,
@@ -289,6 +315,11 @@ function renderActiveSignal(signal) {
   const sigAsset = document.getElementById('sigAsset');
   if (sigAsset) sigAsset.textContent = signal.asset;
 
+  const sigExpirationDisplay = document.getElementById('sigExpirationDisplay');
+  if (sigExpirationDisplay) {
+    sigExpirationDisplay.textContent = signal.expirationSec === 60 ? '1 MIN' : '30 SEC';
+  }
+
   const badge = document.getElementById('sigTypeBadge');
   if (badge) {
     badge.textContent = `${signal.type} ${signal.type === 'CALL' ? '↑' : '↓'}`;
@@ -315,7 +346,6 @@ function renderActiveSignal(signal) {
   startSignalTimer(signal);
 }
 
-// Привязка событий обработчика результатов (Чистый JS без inline inline-onclick)
 function bindResultButtons() {
   const resultBtnRow = document.getElementById('resultBtnRow');
   if (!resultBtnRow) return;
@@ -339,6 +369,7 @@ function startSignalTimer(signal) {
   const statusText = document.getElementById('signalStatusText');
   const resultBtnRow = document.getElementById('resultBtnRow');
   const circumference = 339.29;
+  const totalDurationMs = (signal.expirationSec || 30) * 1000;
 
   activeTimerInterval = setInterval(() => {
     const remainingMs = signal.expirationAt - Date.now();
@@ -355,15 +386,20 @@ function startSignalTimer(signal) {
       return;
     }
 
-    const seconds = Math.ceil(remainingMs / 1000);
-    const formattedSec = seconds < 10 ? `0${seconds}` : seconds;
-    if (timerText) timerText.textContent = `00:${formattedSec}`;
+    const totalSeconds = Math.ceil(remainingMs / 1000);
+    const mins = Math.floor(totalSeconds / 60);
+    const secs = totalSeconds % 60;
+    
+    const formattedMins = mins < 10 ? `0${mins}` : mins;
+    const formattedSecs = secs < 10 ? `0${secs}` : secs;
+
+    if (timerText) timerText.textContent = `${formattedMins}:${formattedSecs}`;
 
     if (progressCircle) {
-      const progressFraction = (60000 - remainingMs) / 60000;
+      const progressFraction = (totalDurationMs - remainingMs) / totalDurationMs;
       progressCircle.style.strokeDashoffset = circumference * progressFraction;
     }
-  }, 300);
+  }, 200);
 }
 
 window.handleSignalResult = function(result) {
@@ -409,7 +445,7 @@ function checkActiveSignalOnLoad() {
   }
 }
 
-// 5. Модальное окно и P&L
+// 6. Модальное окно и P&L
 function initModalLogic() {
   const triggerBtn = document.getElementById('btn-end-session-trigger');
   const modal = document.getElementById('endSessionModal');
@@ -450,7 +486,7 @@ function initModalLogic() {
   };
 }
 
-// 6. Рендеринг UI
+// 7. Рендеринг UI
 function renderUI() {
   const overall = store.getOverallStats();
   const today = store.getTodayStats();
@@ -506,7 +542,7 @@ function renderUI() {
         return `
           <tr style="border-bottom: 1px solid rgba(255,255,255,0.03);">
             <td style="padding: 10px; font-weight:600;">${s.asset}</td>
-            <td style="padding: 10px; color: ${s.type === 'CALL' ? 'var(--accent-green)' : 'var(--accent-red)'}">${s.type}</td>
+            <td style="padding: 10px; color: ${s.type === 'CALL' ? 'var(--accent-green)' : 'var(--accent-red)'}">${s.type} (${s.expirationSec === 60 ? '1m' : '30s'})</td>
             <td style="padding: 10px; color: var(--text-muted);">${new Date(s.generatedAt).toLocaleTimeString()}</td>
             <td style="padding: 10px;">${s.confidence}</td>
             <td style="padding: 10px; font-weight:700; color: ${resultColor};">${s.result || 'EXPIRED'}</td>
@@ -539,7 +575,7 @@ function renderUI() {
   renderChart();
 }
 
-// 7. График Chart.js
+// 8. График Chart.js
 function renderChart() {
   const canvas = document.getElementById('performanceChart');
   if (!canvas || typeof Chart === 'undefined') return;
