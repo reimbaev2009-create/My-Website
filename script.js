@@ -200,13 +200,35 @@ function initSignalGenerator() {
 
   if (!genBtn || !scannerBox) return;
 
-  genBtn.addEventListener('click', () => {
+  genBtn.addEventListener('click', async () => {
     if (store.getActiveSignal()) return;
 
-    if (!screenStream || !screenVideo.videoWidth || screenVideo.readyState < 2) {
-      alert("Сначала нажмите 'ПОДКЛЮЧИТЬ POCKET OPTION' и убедитесь, что трансляция активна!");
+    // Проверка, что захват экрана активен
+    if (!screenStream || !screenVideo || !screenVideo.videoWidth || screenVideo.readyState < 2) {
+      alert("Сначала нажмите «ПОДКЛЮЧИТЬ POCKET OPTION» и выберите вкладку с графиком Pocket Option.");
       return;
     }
+
+    // ===== НОВАЯ ПРОВЕРКА: кадр не должен быть чёрным =====
+    const checkCanvas = document.createElement('canvas');
+    checkCanvas.width = 100;
+    checkCanvas.height = 100;
+    const checkCtx = checkCanvas.getContext('2d');
+    checkCtx.drawImage(screenVideo, 0, 0, 100, 100);
+    const testData = checkCtx.getImageData(0, 0, 100, 100).data;
+
+    let nonBlackPixels = 0;
+    for (let i = 0; i < testData.length; i += 4) {
+      if (testData[i] > 15 || testData[i+1] > 15 || testData[i+2] > 15) {
+        nonBlackPixels++;
+      }
+    }
+
+    if (nonBlackPixels < 50) {
+      alert("Кадр чёрный!\n\nУбедись, что:\n1. Ты расшарил именно вкладку Pocket Option\n2. График виден на экране\n3. Вкладка не свёрнута\n\nПопробуй переподключить захват экрана.");
+      return;
+    }
+    // ======================================================
 
     genBtn.disabled = true;
     scannerBox.classList.add('active');
@@ -214,12 +236,20 @@ function initSignalGenerator() {
     const displayBox = document.getElementById('activeSignalDisplay');
     if (displayBox) displayBox.style.display = 'none';
 
-    let detectedSignalType = Math.random() > 0.5 ? 'CALL' : 'PUT'; 
+    let detectedSignalType = null;
     let analysisResult = null;
 
     try {
       if (snapshotCanvas && screenVideo) {
-        analysisResult = ChartAnalyzer.processCurrentFrame(screenVideo, snapshotCanvas, selectedExpirationTime === 30 ? '30s' : '1m');
+        // Небольшая задержка, чтобы кадр точно прогрузился
+        await new Promise(r => setTimeout(r, 150));
+
+        analysisResult = ChartAnalyzer.processCurrentFrame(
+          screenVideo, 
+          snapshotCanvas, 
+          selectedExpirationTime === 30 ? '30s' : '1m'
+        );
+
         if (analysisResult && analysisResult.signal && analysisResult.signal.direction !== 'NO_TRADE') {
           detectedSignalType = analysisResult.signal.direction;
         }
