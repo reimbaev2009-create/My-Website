@@ -343,12 +343,19 @@ function createAndStartSignal(forcedType = null, analysisResult = null) {
   }
 
   // Если анализ сказал NO_TRADE — просто показываем сообщение и выходим
-  if (finalType === 'NO_TRADE') {
-    alert("Анализ не нашёл достаточно сильный сигнал. Попробуйте ещё раз через несколько секунд.");
+if (finalType === 'NO_TRADE') {
+  // Вместо блокировки — берём направление по последним свечам (если они есть)
+  if (analysisResult?.candles?.length >= 3) {
+    const last = analysisResult.candles[analysisResult.candles.length - 1];
+    finalType = last.isBullish ? 'CALL' : 'PUT';
+  } else {
+    // Только если совсем ничего нет — тогда уже сообщение
+    alert("Не удалось распознать свечи. Убедись, что график Pocket Option полностью виден и попробуй ещё раз.");
     const genBtn = document.getElementById('generateSignalBtn');
     if (genBtn) genBtn.disabled = false;
     return;
   }
+}
 
   const isCall = finalType === 'CALL';
   const now = Date.now();

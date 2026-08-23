@@ -54,5 +54,5 @@ export const ANALYSIS_CONFIG = {
   },
 
   // Порог уверенности для выдачи сигнала
-  MIN_SIGNAL_THRESHOLD: 0.16
+  MIN_SIGNAL_THRESHOLD: 0.09
 };

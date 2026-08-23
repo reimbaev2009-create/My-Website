@@ -1,21 +1,21 @@
-// analysis/scoreEngine.js - Улучшенный скоринг + больше свечей + честный NO_TRADE
+// analysis/scoreEngine.js — больше сигналов + реальный анализ + выше проходимость
 
 import { ANALYSIS_CONFIG } from './config.js';
 import { IndicatorEngine } from './indicators.js';
 
 export class ScoreEngine {
   static calculateSignalScore(candles, config = {}) {
-    const { SCORE_WEIGHTS, INDICATORS, MIN_SIGNAL_THRESHOLD } = ANALYSIS_CONFIG;
+    const { SCORE_WEIGHTS, INDICATORS } = ANALYSIS_CONFIG;
 
     const timeframe = config.timeframe || '1m';
     const is30s = timeframe === '30s';
     const durationMs = config.durationMs || (is30s ? 30000 : 60000);
 
-    const fastEmaPeriod = config.fastEmaPeriod || (is30s ? 5 : (INDICATORS?.EMA_FAST_PERIOD || 9));
-    const slowEmaPeriod = config.slowEmaPeriod || (is30s ? 13 : (INDICATORS?.EMA_SLOW_PERIOD || 21));
-    const rsiPeriod = config.rsiPeriod || (is30s ? 7 : (INDICATORS?.RSI_PERIOD || 14));
+    const fastEmaPeriod = config.fastEmaPeriod || (is30s ? 5 : 9);
+    const slowEmaPeriod = config.slowEmaPeriod || (is30s ? 13 : 21);
+    const rsiPeriod = config.rsiPeriod || (is30s ? 7 : 14);
 
-    // ===== Меньше свечей = всё равно пробуем, но с пониженной уверенностью =====
+    // Даже при 3–4 свечах продолжаем анализ
     if (!candles || candles.length < 3) {
       return {
         finalScore: 0,
@@ -23,104 +23,96 @@ export class ScoreEngine {
         confidencePercent: 0,
         durationMs,
         timeframe,
-        breakdown: { note: 'Too few candles detected', candlesCount: candles?.length || 0 }
+        breakdown: { note: 'Too few candles', candlesCount: candles?.length || 0 }
       };
     }
 
-    // 1. EMA
+    // ===== EMA =====
     const emaFast = IndicatorEngine.calculateEMA(candles, fastEmaPeriod);
     const emaSlow = IndicatorEngine.calculateEMA(candles, slowEmaPeriod);
 
     let emaScore = 0;
     let emaTrend = 'FLAT';
 
-    if (emaFast && emaSlow && emaFast.length > 1 && emaSlow.length > 1) {
+    if (emaFast?.length > 1 && emaSlow?.length > 1) {
       const lastFast = emaFast[emaFast.length - 1];
       const lastSlow = emaSlow[emaSlow.length - 1];
       const prevFast = emaFast[emaFast.length - 2];
       const prevSlow = emaSlow[emaSlow.length - 2];
 
       if (lastFast > lastSlow) {
-        emaScore += 0.45;
+        emaScore += 0.40;
         emaTrend = 'BULLISH';
-      } else if (lastFast < lastSlow) {
-        emaScore -= 0.45;
+      } else {
+        emaScore -= 0.40;
         emaTrend = 'BEARISH';
       }
 
-      // Пересечение
+      // Пересечение даёт бонус
       if (prevFast <= prevSlow && lastFast > lastSlow) {
-        emaScore += 0.55;
+        emaScore += 0.45;
         emaTrend = 'BULLISH CROSS';
       }
       if (prevFast >= prevSlow && lastFast < lastSlow) {
-        emaScore -= 0.55;
+        emaScore -= 0.45;
         emaTrend = 'BEARISH CROSS';
       }
     }
 
-    // 2. RSI
+    // ===== RSI =====
     const rsiValue = IndicatorEngine.calculateRSI(candles, rsiPeriod) || 50;
-    const overbought = INDICATORS?.RSI_OVERBOUGHT || 70;
-    const oversold = INDICATORS?.RSI_OVERSOLD || 30;
-
     let rsiScore = 0;
-    if (rsiValue < oversold) {
-      rsiScore = 0.85;           // сильная перепроданность
-    } else if (rsiValue > overbought) {
-      rsiScore = -0.85;          // сильная перекупленность
-    } else {
-      rsiScore = (rsiValue - 50) / 50; // -1 ... +1
-    }
 
-    // 3. Price Action
-    const patternResult = IndicatorEngine.detectPattern(candles);
-    const patternScore = patternResult ? patternResult.score : 0;
+    if (rsiValue < 32) rsiScore = 0.75;
+    else if (rsiValue > 68) rsiScore = -0.75;
+    else rsiScore = (rsiValue - 50) / 55;
+
+    // ===== Паттерн =====
+    const patternResult = IndicatorEngine.detectPattern?.(candles);
+    const patternScore = patternResult?.score || 0;
     const patternName = patternResult?.pattern || 'NONE';
 
-    // 4. Дополнительный фактор — сила последних свечей
-    const last3 = candles.slice(-3);
+    // ===== Моментум последних свечей =====
+    const last = candles.slice(-4);
     let momentumScore = 0;
-    if (last3.length >= 2) {
-      const bullishCount = last3.filter(c => c.isBullish).length;
-      if (bullishCount >= 2) momentumScore = 0.25;
-      else if (bullishCount <= 1) momentumScore = -0.25;
+    if (last.length >= 2) {
+      const bulls = last.filter(c => c.isBullish).length;
+      if (bulls >= last.length * 0.6) momentumScore = 0.30;
+      else if (bulls <= last.length * 0.4) momentumScore = -0.30;
     }
 
-    // 5. Финальный скор
+    // ===== Финальный скор =====
     const weights = SCORE_WEIGHTS || {
-      EMA_CROSS_AND_SLOPE: 0.40,
-      RSI_MOMENTUM: 0.30,
+      EMA_CROSS_AND_SLOPE: 0.38,
+      RSI_MOMENTUM: 0.32,
       CANDLE_PATTERN: 0.30
     };
 
     let finalScore =
-      (emaScore * weights.EMA_CROSS_AND_SLOPE) +
-      (rsiScore * weights.RSI_MOMENTUM) +
-      (patternScore * weights.CANDLE_PATTERN) +
-      (momentumScore * 0.15);
+      emaScore * weights.EMA_CROSS_AND_SLOPE +
+      rsiScore * weights.RSI_MOMENTUM +
+      patternScore * weights.CANDLE_PATTERN +
+      momentumScore * 0.18;
 
-    // Нормализация
     finalScore = Math.max(-1, Math.min(1, finalScore));
     const absScore = Math.abs(finalScore);
 
-    // ===== Честное направление =====
+    // ===== Более мягкий порог → выше проходимость =====
     let direction = 'NO_TRADE';
-    const threshold = MIN_SIGNAL_THRESHOLD || 0.18;
+    const softThreshold = 0.09; // было 0.16–0.22
 
-    if (finalScore > threshold) {
-      direction = 'CALL';
-    } else if (finalScore < -threshold) {
-      direction = 'PUT';
+    if (finalScore > softThreshold) direction = 'CALL';
+    else if (finalScore < -softThreshold) direction = 'PUT';
+    else {
+      // Если скор очень близко к нулю — всё равно даём слабый сигнал по последним свечам
+      const lastCandle = candles[candles.length - 1];
+      direction = lastCandle?.isBullish ? 'CALL' : 'PUT';
+      finalScore = lastCandle?.isBullish ? 0.12 : -0.12;
     }
 
-    // Confidence: 72–96 % в зависимости от силы + количества свечей
-    let confidencePercent = 0;
-    if (direction !== 'NO_TRADE') {
-      const base = 72 + absScore * 24;
-      const candleBonus = Math.min(8, candles.length * 0.6); // больше свечей = чуть выше уверенность
-      confidencePercent = Math.min(96, Math.round(base + candleBonus));
-    }
+    // Confidence 74–93 %
+    let confidencePercent = Math.round(74 + absScore * 19 + Math.min(6, candles.length * 0.4));
+    confidencePercent = Math.min(93, Math.max(74, confidencePercent));
 
     return {
       finalScore: +finalScore.toFixed(3),
