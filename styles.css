@@ -1050,3 +1050,125 @@ body {
 #soundToggle:checked ~ #soundToggleCircle {
   transform: translateX(20px);
 }
+/* ==================== УЛУЧШЕННЫЕ АНИМАЦИИ И СВЕЧЕНИЕ ==================== */
+
+/* Плавное появление активного сигнала */
+.active-signal-display {
+  animation: signalAppear 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes signalAppear {
+  0% {
+    opacity: 0;
+    transform: translateY(18px) scale(0.96);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Свечение для CALL */
+.signal-type-badge.CALL {
+  box-shadow: 0 0 20px rgba(16, 185, 129, 0.45),
+              0 0 40px rgba(16, 185, 129, 0.15);
+  animation: glowGreen 2.2s ease-in-out infinite alternate;
+}
+
+/* Свечение для PUT */
+.signal-type-badge.PUT {
+  box-shadow: 0 0 20px rgba(239, 68, 68, 0.45),
+              0 0 40px rgba(239, 68, 68, 0.15);
+  animation: glowRed 2.2s ease-in-out infinite alternate;
+}
+
+@keyframes glowGreen {
+  0% {
+    box-shadow: 0 0 16px rgba(16, 185, 129, 0.35),
+                0 0 32px rgba(16, 185, 129, 0.1);
+  }
+  100% {
+    box-shadow: 0 0 28px rgba(16, 185, 129, 0.6),
+                0 0 50px rgba(16, 185, 129, 0.25);
+  }
+}
+
+@keyframes glowRed {
+  0% {
+    box-shadow: 0 0 16px rgba(239, 68, 68, 0.35),
+                0 0 32px rgba(239, 68, 68, 0.1);
+  }
+  100% {
+    box-shadow: 0 0 28px rgba(239, 68, 68, 0.6),
+                0 0 50px rgba(239, 68, 68, 0.25);
+  }
+}
+
+/* Свечение всей карточки сигнала */
+.signal-main-card {
+  transition: box-shadow 0.4s ease, transform 0.3s ease;
+}
+
+.signal-main-card:has(.signal-type-badge.CALL) {
+  box-shadow: 0 0 30px rgba(16, 185, 129, 0.12);
+}
+
+.signal-main-card:has(.signal-type-badge.PUT) {
+  box-shadow: 0 0 30px rgba(239, 68, 68, 0.12);
+}
+
+/* Мини-панель тоже получает свечение */
+.mini-signal-type.CALL {
+  text-shadow: 0 0 12px rgba(16, 185, 129, 0.7);
+}
+
+.mini-signal-type.PUT {
+  text-shadow: 0 0 12px rgba(239, 68, 68, 0.7);
+}
+
+/* Более приятное появление мини-панели */
+.mini-panel.active {
+  animation: miniPanelIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes miniPanelIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.9) translateY(12px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* Улучшенные отступы на мобильных */
+@media (max-width: 768px) {
+  .main-content {
+    padding: 14px !important;
+  }
+
+  .section-card {
+    padding: 18px !important;
+  }
+
+  .signal-main-card {
+    padding: 20px 16px !important;
+  }
+
+  .mini-panel {
+    width: 240px;
+    right: 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .main-content {
+    padding: 10px !important;
+  }
+
+  .stats-grid,
+  .stats-grid-4 {
+    gap: 10px !important;
+  }
+}
