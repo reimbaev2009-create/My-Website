@@ -75,18 +75,48 @@ static detectCandlePixels(imageData) {
   const minY = Math.floor(height * 0.05);
   const maxY = Math.floor(height * 0.92);
 
-  const step = 1; // более точное сканирование
+  // ===== Сэмплируем реальные цвета из центра графика =====
+  const samplePoints = [];
+  const centerX = Math.floor(width / 2);
+  const centerY = Math.floor(height / 2);
 
+  // Берём несколько точек вокруг центра
+  for (let dy = -100; dy <= 100; dy += 40) {
+    for (let dx = -200; dx <= 200; dx += 50) {
+      const x = centerX + dx;
+      const y = centerY + dy;
+      if (x < 0 || x >= width || y < 0 || y >= height) continue;
+
+      const idx = (y * width + x) * 4;
+      const r = data[idx];
+      const g = data[idx + 1];
+      const b = data[idx + 2];
+      const hsv = this.rgbToHsv(r, g, b);
+
+      samplePoints.push({
+        x, y,
+        rgb: `rgb(${r},${g},${b})`,
+        hsv: `H:${hsv.h} S:${hsv.s} V:${hsv.v}`
+      });
+    }
+  }
+
+  console.log("=== РЕАЛЬНЫЕ ЦВЕТА НА КАДРЕ (центр графика) ===");
+  samplePoints.forEach((p, i) => {
+    console.log(`Точка ${i + 1}: ${p.rgb} → ${p.hsv}`);
+  });
+  console.log("================================================");
+
+  // Обычный поиск свечей
+  const step = 1;
   for (let y = minY; y < maxY; y += step) {
     for (let x = minX; x < maxX; x += step) {
       const idx = (y * width + x) * 4;
       const r = data[idx];
       const g = data[idx + 1];
       const b = data[idx + 2];
-
       const hsv = this.rgbToHsv(r, g, b);
 
-      // Зелёные
       if (
         hsv.h >= BULLISH_GREEN.hueMin &&
         hsv.h <= BULLISH_GREEN.hueMax &&
@@ -94,9 +124,7 @@ static detectCandlePixels(imageData) {
         hsv.v >= BULLISH_GREEN.valMin
       ) {
         greenPixels.push({ x, y });
-      }
-      // Красные
-      else if (
+      } else if (
         ((hsv.h >= BEARISH_RED.hueMinRange1[0] && hsv.h <= BEARISH_RED.hueMinRange1[1]) ||
          (hsv.h >= BEARISH_RED.hueMinRange2[0] && hsv.h <= BEARISH_RED.hueMinRange2[1])) &&
         hsv.s >= BEARISH_RED.satMin &&
@@ -107,12 +135,7 @@ static detectCandlePixels(imageData) {
     }
   }
 
-  // ===== ДИАГНОСТИКА =====
-  console.log("=== ColorDetector DEBUG ===");
-  console.log("Размер кадра:", width, "x", height);
-  console.log("Найдено зелёных пикселей:", greenPixels.length);
-  console.log("Найдено красных пикселей:", redPixels.length);
-  console.log("===========================");
+  console.log("Найдено зелёных:", greenPixels.length, "| красных:", redPixels.length);
 
   return {
     greenPixels,
