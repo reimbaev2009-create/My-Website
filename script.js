@@ -31,13 +31,16 @@ document.addEventListener('DOMContentLoaded', () => {
   initScreenVideoElement();
   initNavigation();
   initAssetSelector();
-  initExpirationSelector(); // Инициализация кнопок 30s/1m
+  initExpirationSelector();
   initScreenCaptureLogic();
   initSignalGenerator();
   initModalLogic();
   
   checkActiveSignalOnLoad();
   renderUI();
+
+  // Мини-панель
+  initMiniPanel();
 });
 
 function initScreenVideoElement() {
@@ -113,6 +116,11 @@ function initAssetSelector() {
       const asset = item.dataset.asset;
       store.setSelectedAsset(asset);
       if (selectedLabel) selectedLabel.textContent = asset;
+
+      // Обновляем мини-панель
+      const miniAssetLabel = document.getElementById('miniAssetLabel');
+      if (miniAssetLabel) miniAssetLabel.textContent = asset;
+
       dropdown.classList.remove('active');
     }
   });
@@ -164,7 +172,6 @@ function initScreenCaptureLogic() {
 
   btnConnect.addEventListener('click', async () => {
     try {
-      // Останавливаем старый поток
       if (screenStream) {
         screenStream.getTracks().forEach(track => track.stop());
         screenStream = null;
@@ -172,14 +179,13 @@ function initScreenCaptureLogic() {
 
       screenStream = await navigator.mediaDevices.getDisplayMedia({
         video: {
-          displaySurface: "monitor",   // предпочитаем весь экран
+          displaySurface: "monitor",
           frameRate: { ideal: 15, max: 30 }
         },
         audio: false,
         preferCurrentTab: false
       });
 
-      // Важно: полностью пересоздаём video-элемент
       if (screenVideo) {
         screenVideo.srcObject = null;
         screenVideo.remove();
@@ -190,12 +196,11 @@ function initScreenCaptureLogic() {
       screenVideo.playsInline = true;
       screenVideo.muted = true;
       screenVideo.style.position = 'fixed';
-      screenVideo.style.top = '-9999px'; // скрыт
+      screenVideo.style.top = '-9999px';
       document.body.appendChild(screenVideo);
 
       screenVideo.srcObject = screenStream;
 
-      // Ждём, пока видео реально начнёт играть
       await new Promise((resolve, reject) => {
         const timeout = setTimeout(() => reject(new Error("Timeout waiting for video")), 5000);
 
@@ -209,13 +214,11 @@ function initScreenCaptureLogic() {
           resolve();
         };
 
-        // Принудительно запускаем
         screenVideo.play().catch(err => {
           console.warn("play() error:", err);
         });
       });
 
-      // Обработка окончания шаринга
       screenStream.getVideoTracks()[0].onended = () => {
         screenStream = null;
         if (captureStatus) captureStatus.style.display = 'none';
@@ -247,7 +250,6 @@ function initSignalGenerator() {
   genBtn.addEventListener('click', async () => {
     if (store.getActiveSignal()) return;
 
-    // Проверка, что захват экрана активен
     if (!screenStream || !screenVideo || !screenVideo.videoWidth || screenVideo.readyState < 2) {
       alert("Сначала нажмите «ПОДКЛЮЧИТЬ POCKET OPTION» и выберите весь экран или окно с графиком Pocket Option.");
       return;
@@ -255,7 +257,6 @@ function initSignalGenerator() {
 
     // ===== УЛУЧШЕННАЯ ПРОВЕРКА ЧЁРНОГО КАДРА =====
     try {
-      // Даём видео немного времени на обновление кадра
       await new Promise(r => setTimeout(r, 250));
 
       const checkCanvas = document.createElement('canvas');
@@ -297,7 +298,6 @@ function initSignalGenerator() {
 
     try {
       if (snapshotCanvas && screenVideo) {
-        // Ещё одна небольшая задержка перед реальным анализом
         await new Promise(r => setTimeout(r, 150));
 
         analysisResult = ChartAnalyzer.processCurrentFrame(
@@ -338,24 +338,20 @@ function createAndStartSignal(forcedType = null, analysisResult = null) {
   
   let finalType = forcedType;
   if (!finalType || finalType === 'NO_TRADE') {
-    // Если анализ не дал направление — не генерируем случайный сигнал
     finalType = 'NO_TRADE';
   }
 
-  // Если анализ сказал NO_TRADE — просто показываем сообщение и выходим
-if (finalType === 'NO_TRADE') {
-  // Вместо блокировки — берём направление по последним свечам (если они есть)
-  if (analysisResult?.candles?.length >= 3) {
-    const last = analysisResult.candles[analysisResult.candles.length - 1];
-    finalType = last.isBullish ? 'CALL' : 'PUT';
-  } else {
-    // Только если совсем ничего нет — тогда уже сообщение
-    alert("Не удалось распознать свечи. Убедись, что график Pocket Option полностью виден и попробуй ещё раз.");
-    const genBtn = document.getElementById('generateSignalBtn');
-    if (genBtn) genBtn.disabled = false;
-    return;
+  if (finalType === 'NO_TRADE') {
+    if (analysisResult?.candles?.length >= 3) {
+      const last = analysisResult.candles[analysisResult.candles.length - 1];
+      finalType = last.isBullish ? 'CALL' : 'PUT';
+    } else {
+      alert("Не удалось распознать свечи. Убедись, что график Pocket Option полностью виден и попробуй ещё раз.");
+      const genBtn = document.getElementById('generateSignalBtn');
+      if (genBtn) genBtn.disabled = false;
+      return;
+    }
   }
-}
 
   const isCall = finalType === 'CALL';
   const now = Date.now();
@@ -365,14 +361,11 @@ if (finalType === 'NO_TRADE') {
   const signalInfo = analysisResult ? analysisResult.signal : null;
   const breakdown = signalInfo ? signalInfo.breakdown : {};
 
-  // Берём РЕАЛЬНЫЙ confidence из анализа
   let confidence = '—';
   if (signalInfo && typeof signalInfo.confidencePercent === 'number' && signalInfo.confidencePercent > 0) {
     confidence = `${signalInfo.confidencePercent}%`;
   }
 
-  // Entry цену больше НЕ генерируем случайно.
-  // Пока анализатор не умеет читать реальную цену — просто не показываем её.
   const entryPrice = null;
 
   const signal = {
@@ -380,7 +373,7 @@ if (finalType === 'NO_TRADE') {
     asset,
     type: finalType,
     expirationSec: selectedExpirationTime,
-    entry: entryPrice,                    // теперь null
+    entry: entryPrice,
     confidence: confidence,
     generatedAt: now,
     expirationAt: expires,
@@ -436,29 +429,20 @@ function renderActiveSignal(signal) {
     badge.className = `signal-type-badge ${signal.type}`;
   }
 
-  // Confidence
   const sigConf = document.getElementById('sigConf');
   if (sigConf) {
     sigConf.textContent = signal.confidence || '—';
   }
 
-  // Entry — показываем только если есть реальное значение
   const sigEntry = document.getElementById('sigEntry');
   if (sigEntry) {
     if (signal.entry) {
       sigEntry.textContent = signal.entry;
-      sigEntry.parentElement.style.display = '';      // показываем
     } else {
-      // Прячем весь кусок " | Entry: ..."
-      const parentText = sigEntry.parentElement;
-      if (parentText) {
-        // Более надёжный способ — просто ставим прочерк
-        sigEntry.textContent = '—';
-      }
+      sigEntry.textContent = '—';
     }
   }
 
-  // Factors
   const factorsContainer = document.getElementById('factorsList');
   if (factorsContainer) {
     factorsContainer.innerHTML = signal.factors.map(f => `
@@ -471,6 +455,24 @@ function renderActiveSignal(signal) {
 
   bindResultButtons();
   startSignalTimer(signal);
+
+  // ===== Обновление мини-панели =====
+  const miniBox = document.getElementById('miniSignalBox');
+  const miniType = document.getElementById('miniSigType');
+  const miniConf = document.getElementById('miniSigConf');
+  const miniGen = document.getElementById('miniGenerateBtn');
+  const miniAssetLabel = document.getElementById('miniAssetLabel');
+
+  if (miniBox) {
+    miniBox.style.display = 'block';
+    if (miniType) {
+      miniType.textContent = `${signal.type} ${signal.type === 'CALL' ? '↑' : '↓'}`;
+      miniType.className = `mini-signal-type ${signal.type}`;
+    }
+    if (miniConf) miniConf.textContent = signal.confidence || '—';
+    if (miniGen) miniGen.disabled = true;
+    if (miniAssetLabel) miniAssetLabel.textContent = signal.asset;
+  }
 }
 
 function bindResultButtons() {
@@ -495,6 +497,9 @@ function startSignalTimer(signal) {
   const progressCircle = document.getElementById('timerProgressCircle');
   const statusText = document.getElementById('signalStatusText');
   const resultBtnRow = document.getElementById('resultBtnRow');
+  const miniTimer = document.getElementById('miniSigTimer');
+  const miniResultRow = document.getElementById('miniResultRow');
+
   const circumference = 339.29;
   const totalDurationMs = (signal.expirationSec || 30) * 1000;
 
@@ -504,12 +509,14 @@ function startSignalTimer(signal) {
     if (remainingMs <= 0) {
       clearInterval(activeTimerInterval);
       if (timerText) timerText.textContent = "00:00";
+      if (miniTimer) miniTimer.textContent = "00:00";
       if (progressCircle) progressCircle.style.strokeDashoffset = circumference;
       if (statusText) {
         statusText.textContent = "SIGNAL EXPIRED - SELECT RESULT";
         statusText.style.color = "var(--accent-red)";
       }
       if (resultBtnRow) resultBtnRow.style.display = "flex";
+      if (miniResultRow) miniResultRow.style.display = "flex";
       return;
     }
 
@@ -519,8 +526,10 @@ function startSignalTimer(signal) {
     
     const formattedMins = mins < 10 ? `0${mins}` : mins;
     const formattedSecs = secs < 10 ? `0${secs}` : secs;
+    const timeStr = `${formattedMins}:${formattedSecs}`;
 
-    if (timerText) timerText.textContent = `${formattedMins}:${formattedSecs}`;
+    if (timerText) timerText.textContent = timeStr;
+    if (miniTimer) miniTimer.textContent = timeStr;
 
     if (progressCircle) {
       const progressFraction = (totalDurationMs - remainingMs) / totalDurationMs;
@@ -542,6 +551,14 @@ window.handleSignalResult = function(result) {
 
   const genBtn = document.getElementById('generateSignalBtn');
   if (genBtn) genBtn.disabled = false;
+
+  // Сброс мини-панели
+  const miniBox = document.getElementById('miniSignalBox');
+  const miniGen = document.getElementById('miniGenerateBtn');
+  const miniResultRow = document.getElementById('miniResultRow');
+  if (miniBox) miniBox.style.display = 'none';
+  if (miniGen) miniGen.disabled = false;
+  if (miniResultRow) miniResultRow.style.display = 'none';
   
   renderUI();
 };
@@ -556,6 +573,12 @@ window.resetSignalsHistory = function() {
 
     const genBtn = document.getElementById('generateSignalBtn');
     if (genBtn) genBtn.disabled = false;
+
+    // Сброс мини-панели
+    const miniBox = document.getElementById('miniSignalBox');
+    const miniGen = document.getElementById('miniGenerateBtn');
+    if (miniBox) miniBox.style.display = 'none';
+    if (miniGen) miniGen.disabled = false;
 
     renderUI();
   }
@@ -763,4 +786,78 @@ function renderChart() {
       }
     }
   });
+}
+
+// ==================== MINI PANEL LOGIC ====================
+function initMiniPanel() {
+  const panel = document.getElementById('miniPanel');
+  const openBtn = document.getElementById('btnOpenMiniPanel');
+  const closeBtn = document.getElementById('miniCloseBtn');
+  const header = document.getElementById('miniPanelHeader');
+  const miniGenerateBtn = document.getElementById('miniGenerateBtn');
+  const miniAssetLabel = document.getElementById('miniAssetLabel');
+
+  if (!panel || !openBtn) return;
+
+  // Открытие
+  openBtn.addEventListener('click', () => {
+    panel.classList.add('active');
+    if (miniAssetLabel) {
+      miniAssetLabel.textContent = store.getSelectedAsset();
+    }
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+  });
+
+  // Закрытие
+  if (closeBtn) {
+    closeBtn.addEventListener('click', () => {
+      panel.classList.remove('active');
+    });
+  }
+
+  // Перетаскивание
+  let isDragging = false;
+  let offsetX = 0;
+  let offsetY = 0;
+
+  if (header) {
+    header.addEventListener('mousedown', (e) => {
+      isDragging = true;
+      const rect = panel.getBoundingClientRect();
+      offsetX = e.clientX - rect.left;
+      offsetY = e.clientY - rect.top;
+      panel.style.transition = 'none';
+    });
+  }
+
+  document.addEventListener('mousemove', (e) => {
+    if (!isDragging) return;
+    panel.style.left = (e.clientX - offsetX) + 'px';
+    panel.style.top = (e.clientY - offsetY) + 'px';
+    panel.style.right = 'auto';
+  });
+
+  document.addEventListener('mouseup', () => {
+    isDragging = false;
+    if (panel) panel.style.transition = '';
+  });
+
+  // Кнопки 30s / 1m в мини-панели
+  panel.querySelectorAll('.mini-exp-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      panel.querySelectorAll('.mini-exp-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      selectedExpirationTime = parseInt(btn.dataset.time);
+    });
+  });
+
+  // Генерация сигнала из мини-панели
+  if (miniGenerateBtn) {
+    miniGenerateBtn.addEventListener('click', () => {
+      const mainBtn = document.getElementById('generateSignalBtn');
+      if (mainBtn && !mainBtn.disabled) {
+        mainBtn.click();
+      }
+    });
+  }
 }

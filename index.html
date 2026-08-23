@@ -152,6 +152,11 @@
               <span style="width: 6px; height: 6px; background: #10b981; border-radius: 50%; box-shadow: 0 0 6px #10b981;"></span>
               [LIVE] POCKET OPTION CONNECTED
             </div>
+
+            <!-- Кнопка открытия мини-панели -->
+            <button id="btnOpenMiniPanel" style="width: 100%; margin-top: 10px; padding: 11px; background: rgba(99, 102, 241, 0.15); border: 1px solid #6366f1; color: #a5b4fc; border-radius: 10px; font-weight: 700; font-size: 13px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: 0.25s;">
+              <i data-lucide="panel-top"></i> ОТКРЫТЬ МИНИ-ПАНЕЛЬ
+            </button>
           </div>
 
           <label style="font-size: 12px; color: var(--text-muted); display: block; margin-bottom: 6px;">SELECT OTC ASSET</label>
@@ -302,5 +307,41 @@
   </div>
 
   <script type="module" src="script.js"></script>
+    <!-- ==================== FLOATING MINI PANEL ==================== -->
+  <div id="miniPanel" class="mini-panel">
+    <div class="mini-panel-header" id="miniPanelHeader">
+      <div class="mini-panel-title">
+        <i data-lucide="radio" style="width:14px;height:14px;"></i>
+        <span>Beybars Signal</span>
+      </div>
+      <button class="mini-close-btn" id="miniCloseBtn">✕</button>
+    </div>
+
+    <div class="mini-panel-body">
+      <div class="mini-asset" id="miniAssetLabel">EUR/USD OTC</div>
+
+      <div class="mini-exp-row">
+        <button class="mini-exp-btn active" data-time="30">30s</button>
+        <button class="mini-exp-btn" data-time="60">1m</button>
+      </div>
+
+      <button class="mini-generate-btn" id="miniGenerateBtn">
+        ⚡ GENERATE
+      </button>
+
+      <!-- Active Signal -->
+      <div class="mini-signal" id="miniSignalBox" style="display:none;">
+        <div class="mini-signal-type" id="miniSigType">CALL ↑</div>
+        <div class="mini-signal-info">
+          <span id="miniSigConf">84%</span>
+          <span id="miniSigTimer">00:30</span>
+        </div>
+        <div class="mini-result-row" id="miniResultRow" style="display:none;">
+          <button class="mini-win" onclick="window.handleSignalResult('WIN')">WIN</button>
+          <button class="mini-loss" onclick="window.handleSignalResult('LOSS')">LOSS</button>
+        </div>
+      </div>
+    </div>
+  </div>
 </body>
 </html>
