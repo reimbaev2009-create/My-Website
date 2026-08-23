@@ -41,6 +41,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Мини-панель
   initMiniPanel();
+
+  // Звуковой переключатель
+  initSoundToggle();
 });
 
 function initScreenVideoElement() {
@@ -473,6 +476,9 @@ function renderActiveSignal(signal) {
     if (miniGen) miniGen.disabled = true;
     if (miniAssetLabel) miniAssetLabel.textContent = signal.asset;
   }
+
+  // Звук нового сигнала
+  playSignalSound();
 }
 
 function bindResultButtons() {
@@ -517,6 +523,9 @@ function startSignalTimer(signal) {
       }
       if (resultBtnRow) resultBtnRow.style.display = "flex";
       if (miniResultRow) miniResultRow.style.display = "flex";
+
+      // Звук окончания таймера
+      playTimerEndSound();
       return;
     }
 
@@ -894,3 +903,83 @@ window.cancelActiveSignal = function() {
   // Обновляем интерфейс
   renderUI();
 };
+
+// ==================== ЗВУКОВЫЕ УВЕДОМЛЕНИЯ ====================
+let soundEnabled = localStorage.getItem('beybars_sound') !== 'false'; // по умолчанию включен
+
+function playSignalSound() {
+  if (!soundEnabled) return;
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(880, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(1320, ctx.currentTime + 0.08);
+
+    gain.gain.setValueAtTime(0.18, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.25);
+
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + 0.25);
+  } catch (e) {
+    console.warn('Sound error:', e);
+  }
+}
+
+function playTimerEndSound() {
+  if (!soundEnabled) return;
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(520, ctx.currentTime);
+    osc.frequency.setValueAtTime(380, ctx.currentTime + 0.12);
+
+    gain.gain.setValueAtTime(0.2, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.35);
+
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + 0.35);
+  } catch (e) {
+    console.warn('Sound error:', e);
+  }
+}
+
+function initSoundToggle() {
+  const toggle = document.getElementById('soundToggle');
+  const circle = document.getElementById('soundToggleCircle');
+  const slider = document.getElementById('soundToggleSlider');
+
+  if (!toggle) return;
+
+  // Устанавливаем начальное состояние
+  toggle.checked = soundEnabled;
+  if (circle) {
+    circle.style.transform = soundEnabled ? 'translateX(20px)' : 'translateX(0)';
+  }
+  if (slider) {
+    slider.style.backgroundColor = soundEnabled ? '#6366f1' : '#475569';
+  }
+
+  toggle.addEventListener('change', () => {
+    soundEnabled = toggle.checked;
+    localStorage.setItem('beybars_sound', soundEnabled ? 'true' : 'false');
+
+    if (circle) {
+      circle.style.transform = soundEnabled ? 'translateX(20px)' : 'translateX(0)';
+    }
+    if (slider) {
+      slider.style.backgroundColor = soundEnabled ? '#6366f1' : '#475569';
+    }
+  });
+}
