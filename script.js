@@ -241,6 +241,7 @@ function initScreenCaptureLogic() {
 }
 
 // 5. AI Анимация, снимок экрана и генерация сигнала
+// 5. AI Анимация, снимок экрана и генерация сигнала
 function initSignalGenerator() {
   const genBtn = document.getElementById('generateSignalBtn');
   const scannerBox = document.getElementById('aiScannerBox');
@@ -258,7 +259,7 @@ function initSignalGenerator() {
       return;
     }
 
-    // ===== УЛУЧШЕННАЯ ПРОВЕРКА ЧЁРНОГО КАДРА =====
+    // ===== ПРОВЕРКА ЧЁРНОГО КАДРА =====
     try {
       await new Promise(r => setTimeout(r, 250));
 
@@ -277,10 +278,8 @@ function initSignalGenerator() {
         }
       }
 
-      console.log("Проверка кадра: ненулевых пикселей =", nonBlackPixels);
-
       if (nonBlackPixels < 30) {
-        alert("Кадр всё ещё чёрный.\n\nПопробуй:\n1. Переподключить захват (выбери «Весь экран»)\n2. Сделать окно сайта меньше и не перекрывать график\n3. Обновить страницу и подключить заново");
+        alert("Кадр всё ещё чёрный.\n\nПопробуй переподключить захват экрана.");
         return;
       }
     } catch (e) {
@@ -288,11 +287,20 @@ function initSignalGenerator() {
       alert("Не удалось проверить кадр. Переподключи захват экрана.");
       return;
     }
-    // =============================================
 
+    // ===== АВТООПРЕДЕЛЕНИЕ АКТИВА =====
     genBtn.disabled = true;
+    if (stepText) stepText.textContent = "DETECTING ASSET...";
+    if (progressNum) progressNum.textContent = "0%";
     scannerBox.classList.add('active');
 
+    try {
+      await autoDetectAsset();
+    } catch (e) {
+      console.warn("Не удалось определить актив:", e);
+    }
+
+    // ===== ДАЛЬШЕ ОБЫЧНЫЙ АНАЛИЗ =====
     const displayBox = document.getElementById('activeSignalDisplay');
     if (displayBox) displayBox.style.display = 'none';
 
@@ -982,4 +990,89 @@ function initSoundToggle() {
       slider.style.backgroundColor = soundEnabled ? '#6366f1' : '#475569';
     }
   });
+}
+// ==================== АВТООПРЕДЕЛЕНИЕ АКТИВА ====================
+// ==================== АВТООПРЕДЕЛЕНИЕ АКТИВА ====================
+async function autoDetectAsset() {
+  if (typeof Tesseract === 'undefined') {
+    console.warn('Tesseract не загружен');
+    return;
+  }
+
+  if (!screenVideo || !screenVideo.videoWidth) return;
+
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d');
+
+  const w = screenVideo.videoWidth;
+  const h = screenVideo.videoHeight;
+
+  // Берём ТОЛЬКО левый верхний угол — там название актива
+  // Примерно: слева 0–35% ширины, сверху 0–12% высоты
+  const cropX = 0;
+  const cropY = 0;
+  const cropW = Math.floor(w * 0.38);
+  const cropH = Math.floor(h * 0.13);
+
+  canvas.width = cropW;
+  canvas.height = cropH;
+
+  ctx.drawImage(
+    screenVideo,
+    cropX, cropY, cropW, cropH,   // откуда берём
+    0, 0, cropW, cropH            // куда рисуем
+  );
+
+  const result = await Tesseract.recognize(canvas, 'eng', {
+    logger: () => {}
+  });
+
+  const text = (result?.data?.text || '').toUpperCase().replace(/\s+/g, ' ').trim();
+  console.log('OCR Asset text:', text);
+
+  const assets = OTC_FOREX_ASSETS || [];
+  let foundAsset = null;
+
+  // Ищем совпадение
+  for (const asset of assets) {
+    const upper = asset.toUpperCase();
+    const clean = upper.replace(/\s/g, '');
+    const short = upper.split(' ')[0]; // AUD/CAD
+
+    if (
+      text.includes(upper) ||
+      text.includes(clean) ||
+      text.includes(short) ||
+      text.includes(short.replace('/', ''))
+    ) {
+      foundAsset = asset;
+      break;
+    }
+  }
+
+  // Дополнительная проверка популярных пар
+  if (!foundAsset) {
+    const pairs = ['AUD/CAD OTC', 'EUR/USD OTC', 'GBP/USD OTC', 'USD/JPY OTC', 'AUD/USD OTC', 'USD/CAD OTC', 'EUR/GBP OTC', 'GBP/JPY OTC', 'BTC/USD OTC', 'ETH/USD OTC', 'LTC/USD OTC'];
+    for (const pair of pairs) {
+      if (text.includes(pair) || text.includes(pair.replace('/', ''))) {
+        const full = assets.find(a => a.toUpperCase().includes(pair));
+        foundAsset = full || (pair + ' OTC');
+        break;
+      }
+    }
+  }
+
+  if (foundAsset) {
+    store.setSelectedAsset(foundAsset);
+
+    const selectedLabel = document.getElementById('selectedAssetLabel');
+    if (selectedLabel) selectedLabel.textContent = foundAsset;
+
+    const miniAssetLabel = document.getElementById('miniAssetLabel');
+    if (miniAssetLabel) miniAssetLabel.textContent = foundAsset;
+
+    console.log('Актив автоматически определён:', foundAsset);
+  } else {
+    console.log('Актив не распознан, оставляем текущий. Текст:', text);
+  }
 }
