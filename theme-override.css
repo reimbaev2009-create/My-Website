@@ -1,17 +1,19 @@
-/* theme-override.css — Fix Layout & Cyberpunk Theme */
+/* theme-override.css — Layout Fix + Enhanced Cyberpunk Theme */
+
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
 :root {
   --bg-deep: #050811;
   --bg-sidebar: #080c16;
-  --bg-card: rgba(13, 19, 33, 0.75);
-  --border-subtle: rgba(255, 255, 255, 0.06);
+  --bg-card: rgba(13, 19, 33, 0.78);
+  --border-subtle: rgba(255, 255, 255, 0.07);
   --accent-cyan: #06b6d4;
   --accent-blue: #3b82f6;
   --accent-purple: #6366f1;
   --text-white: #ffffff;
   --text-muted: #8e9aaf;
   --success: #10b981;
+  --ease-spring: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 body {
@@ -22,13 +24,11 @@ body {
   padding: 0;
 }
 
-/* Сбрасываем флекс у главного оберточного контейнера */
-.app-container, main, .main-wrapper, #app {
+/* ========== LAYOUT FIX (важно не трогать) ========== */
+.app-container {
   display: block !important;
-  box-sizing: border-box;
 }
 
-/* Sidebar Fix */
 aside.sidebar {
   background-color: var(--bg-sidebar) !important;
   border-right: 1px solid var(--border-subtle) !important;
@@ -41,8 +41,7 @@ aside.sidebar {
   box-sizing: border-box;
 }
 
-/* Сдвиг основного контента вправо от сайдбара */
-.main-content, main, .content {
+.main-content {
   margin-left: 240px !important;
   padding: 24px 32px !important;
   display: block !important;
@@ -50,7 +49,7 @@ aside.sidebar {
   box-sizing: border-box !important;
 }
 
-/* Top Bar */
+/* ========== TOP BAR ========== */
 .top-bar {
   display: flex !important;
   justify-content: space-between !important;
@@ -61,33 +60,40 @@ aside.sidebar {
   width: 100% !important;
 }
 
-/* Glassmorphic Cards Base */
+/* ========== CARDS ========== */
 .dark-card {
   background: var(--bg-card) !important;
   border: 1px solid var(--border-subtle) !important;
   border-radius: 16px !important;
-  backdrop-filter: blur(12px) !important;
-  -webkit-backdrop-filter: blur(12px) !important;
-  transition: all 0.25s ease-in-out !important;
+  backdrop-filter: blur(14px) !important;
+  -webkit-backdrop-filter: blur(14px) !important;
+  transition: all 0.3s var(--ease-spring) !important;
   box-sizing: border-box !important;
   width: 100% !important;
 }
 
 .dark-card:hover {
-  border-color: rgba(6, 182, 212, 0.3) !important;
-  box-shadow: 0 0 20px rgba(6, 182, 212, 0.15) !important;
+  border-color: rgba(6, 182, 212, 0.35) !important;
+  box-shadow: 0 10px 32px rgba(6, 182, 212, 0.12) !important;
+  transform: translateY(-3px) !important;
 }
 
-/* Hero Section */
+/* ========== HERO ========== */
 .hero-card {
   padding: 32px !important;
   display: flex !important;
   justify-content: space-between !important;
   align-items: center !important;
   margin-bottom: 24px !important;
+  transition: transform 0.35s var(--ease-spring), box-shadow 0.35s ease !important;
 }
 
-/* Stats Grid Fix (4 карточки в ряд) */
+.hero-card:hover {
+  transform: translateY(-4px) !important;
+  box-shadow: 0 16px 40px rgba(99, 102, 241, 0.15) !important;
+}
+
+/* ========== STATS GRID ========== */
 .stats-grid {
   display: grid !important;
   grid-template-columns: repeat(4, 1fr) !important;
@@ -101,7 +107,13 @@ aside.sidebar {
   display: flex !important;
   justify-content: space-between !important;
   align-items: center !important;
-  width: auto !important;
+  transition: all 0.3s var(--ease-spring) !important;
+}
+
+.stat-card:hover {
+  transform: translateY(-4px) !important;
+  border-color: rgba(99, 102, 241, 0.3) !important;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.25) !important;
 }
 
 .stat-label {
@@ -119,7 +131,7 @@ aside.sidebar {
   color: var(--text-white) !important;
 }
 
-/* Buttons */
+/* ========== BUTTONS ========== */
 .btn-gradient {
   background: linear-gradient(90deg, #4f46e5 0%, #06b6d4 100%) !important;
   color: #fff !important;
@@ -128,5 +140,68 @@ aside.sidebar {
   border-radius: 12px !important;
   font-weight: 600 !important;
   cursor: pointer !important;
-  box-shadow: 0 0 20px rgba(6, 182, 212, 0.3) !important;
+  box-shadow: 0 4px 20px rgba(6, 182, 212, 0.35) !important;
+  transition: all 0.3s var(--ease-spring) !important;
+}
+
+.btn-gradient:hover {
+  transform: translateY(-2px) scale(1.02) !important;
+  box-shadow: 0 8px 28px rgba(6, 182, 212, 0.5) !important;
+}
+
+.btn-gradient:active {
+  transform: scale(0.97) !important;
+}
+
+/* Кнопка подключения Pocket Option */
+#btnConnectPocket {
+  transition: all 0.3s var(--ease-spring) !important;
+}
+
+#btnConnectPocket:hover {
+  background: rgba(6, 182, 212, 0.2) !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 6px 20px rgba(6, 182, 212, 0.25) !important;
+}
+
+#btnConnectPocket:active {
+  transform: scale(0.98) !important;
+}
+
+/* Кнопки выбора времени экспирации */
+.expiration-btn {
+  transition: all 0.25s var(--ease-spring) !important;
+}
+
+.expiration-btn:hover {
+  transform: translateY(-1px) !important;
+}
+
+.expiration-btn:active {
+  transform: scale(0.97) !important;
+}
+
+/* ========== RESPONSIVE FIX ========== */
+@media (max-width: 768px) {
+  aside.sidebar {
+    position: relative !important;
+    width: 100% !important;
+    height: auto !important;
+  }
+
+  .main-content {
+    margin-left: 0 !important;
+    width: 100% !important;
+    padding: 16px !important;
+  }
+
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .stats-grid {
+    grid-template-columns: 1fr !important;
+  }
 }
