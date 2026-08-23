@@ -164,17 +164,58 @@ function initScreenCaptureLogic() {
 
   btnConnect.addEventListener('click', async () => {
     try {
+      // Останавливаем старый поток
       if (screenStream) {
         screenStream.getTracks().forEach(track => track.stop());
+        screenStream = null;
       }
 
       screenStream = await navigator.mediaDevices.getDisplayMedia({
-        video: { displaySurface: "browser", frameRate: { max: 30 } },
-        audio: false
+        video: {
+          displaySurface: "monitor",   // предпочитаем весь экран
+          frameRate: { ideal: 15, max: 30 }
+        },
+        audio: false,
+        preferCurrentTab: false
       });
+
+      // Важно: полностью пересоздаём video-элемент
+      if (screenVideo) {
+        screenVideo.srcObject = null;
+        screenVideo.remove();
+      }
+
+      screenVideo = document.createElement('video');
+      screenVideo.autoplay = true;
+      screenVideo.playsInline = true;
+      screenVideo.muted = true;
+      screenVideo.style.position = 'fixed';
+      screenVideo.style.top = '-9999px'; // скрыт
+      document.body.appendChild(screenVideo);
 
       screenVideo.srcObject = screenStream;
 
+      // Ждём, пока видео реально начнёт играть
+      await new Promise((resolve, reject) => {
+        const timeout = setTimeout(() => reject(new Error("Timeout waiting for video")), 5000);
+
+        screenVideo.onloadeddata = () => {
+          clearTimeout(timeout);
+          resolve();
+        };
+
+        screenVideo.onplaying = () => {
+          clearTimeout(timeout);
+          resolve();
+        };
+
+        // Принудительно запускаем
+        screenVideo.play().catch(err => {
+          console.warn("play() error:", err);
+        });
+      });
+
+      // Обработка окончания шаринга
       screenStream.getVideoTracks()[0].onended = () => {
         screenStream = null;
         if (captureStatus) captureStatus.style.display = 'none';
@@ -184,8 +225,11 @@ function initScreenCaptureLogic() {
       if (captureStatus) captureStatus.style.display = 'flex';
       btnConnect.innerText = 'ПЕРЕПОДКЛЮЧИТЬ POCKET OPTION';
 
+      console.log("Screen capture успешно запущен. Размер:", screenVideo.videoWidth, "x", screenVideo.videoHeight);
+
     } catch (err) {
       console.error("Ошибка захвата экрана:", err);
+      alert("Не удалось начать захват экрана.\n\nПопробуй выбрать «Весь экран» и разрешить доступ.");
     }
   });
 }
@@ -205,34 +249,46 @@ function initSignalGenerator() {
 
     // Проверка, что захват экрана активен
     if (!screenStream || !screenVideo || !screenVideo.videoWidth || screenVideo.readyState < 2) {
-      alert("Сначала нажмите «ПОДКЛЮЧИТЬ POCKET OPTION» и выберите вкладку с графиком Pocket Option.");
+      alert("Сначала нажмите «ПОДКЛЮЧИТЬ POCKET OPTION» и выберите весь экран или окно с графиком Pocket Option.");
       return;
     }
 
-    // ===== НОВАЯ ПРОВЕРКА: кадр не должен быть чёрным =====
-    const checkCanvas = document.createElement('canvas');
-    checkCanvas.width = 100;
-    checkCanvas.height = 100;
-    const checkCtx = checkCanvas.getContext('2d');
-    checkCtx.drawImage(screenVideo, 0, 0, 100, 100);
-    const testData = checkCtx.getImageData(0, 0, 100, 100).data;
+    // ===== УЛУЧШЕННАЯ ПРОВЕРКА ЧЁРНОГО КАДРА =====
+    try {
+      // Даём видео немного времени на обновление кадра
+      await new Promise(r => setTimeout(r, 250));
 
-    let nonBlackPixels = 0;
-    for (let i = 0; i < testData.length; i += 4) {
-      if (testData[i] > 15 || testData[i+1] > 15 || testData[i+2] > 15) {
-        nonBlackPixels++;
+      const checkCanvas = document.createElement('canvas');
+      checkCanvas.width = Math.min(screenVideo.videoWidth || 320, 320);
+      checkCanvas.height = Math.min(screenVideo.videoHeight || 180, 180);
+      const checkCtx = checkCanvas.getContext('2d', { willReadFrequently: true });
+
+      checkCtx.drawImage(screenVideo, 0, 0, checkCanvas.width, checkCanvas.height);
+      const testData = checkCtx.getImageData(0, 0, checkCanvas.width, checkCanvas.height).data;
+
+      let nonBlackPixels = 0;
+      for (let i = 0; i < testData.length; i += 16) {
+        if (testData[i] > 20 || testData[i + 1] > 20 || testData[i + 2] > 20) {
+          nonBlackPixels++;
+        }
       }
-    }
 
-    if (nonBlackPixels < 50) {
-      alert("Кадр чёрный!\n\nУбедись, что:\n1. Ты расшарил именно вкладку Pocket Option\n2. График виден на экране\n3. Вкладка не свёрнута\n\nПопробуй переподключить захват экрана.");
+      console.log("Проверка кадра: ненулевых пикселей =", nonBlackPixels);
+
+      if (nonBlackPixels < 30) {
+        alert("Кадр всё ещё чёрный.\n\nПопробуй:\n1. Переподключить захват (выбери «Весь экран»)\n2. Сделать окно сайта меньше и не перекрывать график\n3. Обновить страницу и подключить заново");
+        return;
+      }
+    } catch (e) {
+      console.error("Ошибка проверки кадра:", e);
+      alert("Не удалось проверить кадр. Переподключи захват экрана.");
       return;
     }
-    // ======================================================
+    // =============================================
 
     genBtn.disabled = true;
     scannerBox.classList.add('active');
-    
+
     const displayBox = document.getElementById('activeSignalDisplay');
     if (displayBox) displayBox.style.display = 'none';
 
@@ -241,12 +297,12 @@ function initSignalGenerator() {
 
     try {
       if (snapshotCanvas && screenVideo) {
-        // Небольшая задержка, чтобы кадр точно прогрузился
+        // Ещё одна небольшая задержка перед реальным анализом
         await new Promise(r => setTimeout(r, 150));
 
         analysisResult = ChartAnalyzer.processCurrentFrame(
-          screenVideo, 
-          snapshotCanvas, 
+          screenVideo,
+          snapshotCanvas,
           selectedExpirationTime === 30 ? '30s' : '1m'
         );
 
@@ -262,7 +318,7 @@ function initSignalGenerator() {
     const interval = setInterval(() => {
       currentStep++;
       const progress = Math.min(Math.round((currentStep / SCAN_STEPS.length) * 100), 100);
-      
+
       if (stepText) stepText.textContent = SCAN_STEPS[currentStep - 1] || "FINALIZING ANALYSIS";
       if (progressNum) progressNum.textContent = `${progress}%`;
 
