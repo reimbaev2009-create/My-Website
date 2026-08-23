@@ -252,7 +252,16 @@ function createAndStartSignal(forcedType = null, analysisResult = null) {
   
   let finalType = forcedType;
   if (!finalType || finalType === 'NO_TRADE') {
-    finalType = Math.random() > 0.5 ? 'CALL' : 'PUT';
+    // Если анализ не дал направление — не генерируем случайный сигнал
+    finalType = 'NO_TRADE';
+  }
+
+  // Если анализ сказал NO_TRADE — просто показываем сообщение и выходим
+  if (finalType === 'NO_TRADE') {
+    alert("Анализ не нашёл достаточно сильный сигнал. Попробуйте ещё раз через несколько секунд.");
+    const genBtn = document.getElementById('generateSignalBtn');
+    if (genBtn) genBtn.disabled = false;
+    return;
   }
 
   const isCall = finalType === 'CALL';
@@ -263,14 +272,22 @@ function createAndStartSignal(forcedType = null, analysisResult = null) {
   const signalInfo = analysisResult ? analysisResult.signal : null;
   const breakdown = signalInfo ? signalInfo.breakdown : {};
 
-  const confidence = signalInfo ? `${signalInfo.confidencePercent}%` : `${Math.floor(82 + Math.random() * 15)}%`;
+  // Берём РЕАЛЬНЫЙ confidence из анализа
+  let confidence = '—';
+  if (signalInfo && typeof signalInfo.confidencePercent === 'number' && signalInfo.confidencePercent > 0) {
+    confidence = `${signalInfo.confidencePercent}%`;
+  }
+
+  // Entry цену больше НЕ генерируем случайно.
+  // Пока анализатор не умеет читать реальную цену — просто не показываем её.
+  const entryPrice = null;
 
   const signal = {
     id: 'sig_' + now,
     asset,
     type: finalType,
     expirationSec: selectedExpirationTime,
-    entry: (1 + Math.random() * 100).toFixed(5),
+    entry: entryPrice,                    // теперь null
     confidence: confidence,
     generatedAt: now,
     expirationAt: expires,
@@ -287,7 +304,7 @@ function createAndStartSignal(forcedType = null, analysisResult = null) {
       },
       { 
         name: 'RSI (14)', 
-        status: breakdown.rsiValue !== undefined ? `Value: ${breakdown.rsiValue} ✓` : 'Momentum Aligned ✓' 
+        status: breakdown.rsiValue !== undefined ? `Value: ${breakdown.rsiValue.toFixed(1)} ✓` : 'Momentum Aligned ✓' 
       },
       { 
         name: 'Price Action', 
@@ -326,12 +343,29 @@ function renderActiveSignal(signal) {
     badge.className = `signal-type-badge ${signal.type}`;
   }
 
+  // Confidence
   const sigConf = document.getElementById('sigConf');
-  if (sigConf) sigConf.textContent = signal.confidence;
+  if (sigConf) {
+    sigConf.textContent = signal.confidence || '—';
+  }
 
+  // Entry — показываем только если есть реальное значение
   const sigEntry = document.getElementById('sigEntry');
-  if (sigEntry) sigEntry.textContent = signal.entry;
+  if (sigEntry) {
+    if (signal.entry) {
+      sigEntry.textContent = signal.entry;
+      sigEntry.parentElement.style.display = '';      // показываем
+    } else {
+      // Прячем весь кусок " | Entry: ..."
+      const parentText = sigEntry.parentElement;
+      if (parentText) {
+        // Более надёжный способ — просто ставим прочерк
+        sigEntry.textContent = '—';
+      }
+    }
+  }
 
+  // Factors
   const factorsContainer = document.getElementById('factorsList');
   if (factorsContainer) {
     factorsContainer.innerHTML = signal.factors.map(f => `
