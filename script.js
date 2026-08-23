@@ -415,6 +415,8 @@ function createAndStartSignal(forcedType = null, analysisResult = null) {
   };
 
   store.setActiveSignal(signal);
+    // Проверяем лимит 20 сигналов на активе
+  checkAssetLimit(asset);
   renderActiveSignal(signal);
   renderUI();
 }
@@ -1074,5 +1076,94 @@ async function autoDetectAsset() {
     console.log('Актив автоматически определён:', foundAsset);
   } else {
     console.log('Актив не распознан, оставляем текущий. Текст:', text);
+  }
+}
+// ==================== СЧЁТЧИК 20 СИГНАЛОВ НА АКТИВЕ ====================
+function getAssetSignalCount(asset) {
+  const data = JSON.parse(localStorage.getItem('beybars_asset_counts') || '{}');
+  return data[asset] || 0;
+}
+
+function incrementAssetSignalCount(asset) {
+  const data = JSON.parse(localStorage.getItem('beybars_asset_counts') || '{}');
+  data[asset] = (data[asset] || 0) + 1;
+  localStorage.setItem('beybars_asset_counts', JSON.stringify(data));
+  return data[asset];
+}
+
+function resetAssetSignalCount(asset) {
+  const data = JSON.parse(localStorage.getItem('beybars_asset_counts') || '{}');
+  data[asset] = 0;
+  localStorage.setItem('beybars_asset_counts', JSON.stringify(data));
+}
+
+function playLimitSound() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    
+    // Более громкий и заметный звук
+    const osc1 = ctx.createOscillator();
+    const osc2 = ctx.createOscillator();
+    const gain = ctx.createGain();
+
+    osc1.connect(gain);
+    osc2.connect(gain);
+    gain.connect(ctx.destination);
+
+    osc1.type = 'sine';
+    osc2.type = 'triangle';
+    
+    osc1.frequency.setValueAtTime(660, ctx.currentTime);
+    osc1.frequency.setValueAtTime(880, ctx.currentTime + 0.15);
+    osc1.frequency.setValueAtTime(1100, ctx.currentTime + 0.3);
+
+    osc2.frequency.setValueAtTime(440, ctx.currentTime);
+    osc2.frequency.setValueAtTime(550, ctx.currentTime + 0.2);
+
+    gain.gain.setValueAtTime(0.25, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.6);
+
+    osc1.start(ctx.currentTime);
+    osc2.start(ctx.currentTime);
+    osc1.stop(ctx.currentTime + 0.6);
+    osc2.stop(ctx.currentTime + 0.6);
+  } catch (e) {
+    console.warn('Limit sound error:', e);
+  }
+}
+
+function showAssetLimitModal(asset) {
+  const modal = document.getElementById('assetLimitModal');
+  const nameEl = document.getElementById('limitAssetName');
+  const okBtn = document.getElementById('assetLimitOkBtn');
+
+  if (!modal) return;
+
+  if (nameEl) nameEl.textContent = asset;
+  modal.classList.add('active');
+  playLimitSound();
+
+  const close = () => {
+    modal.classList.remove('active');
+  };
+
+  if (okBtn) {
+    okBtn.onclick = close;
+  }
+
+  // Закрытие по клику на фон
+  modal.onclick = (e) => {
+    if (e.target === modal) close();
+  };
+}
+
+function checkAssetLimit(asset) {
+  const count = incrementAssetSignalCount(asset);
+  console.log(`Сигналов на ${asset}: ${count}`);
+
+  if (count >= 20) {
+    // Сбрасываем счётчик, чтобы не спамило каждый следующий сигнал
+    resetAssetSignalCount(asset);
+    showAssetLimitModal(asset);
   }
 }
