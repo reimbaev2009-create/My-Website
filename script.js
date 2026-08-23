@@ -861,3 +861,36 @@ function initMiniPanel() {
     });
   }
 }
+
+// ==================== ОТМЕНА АКТИВНОГО СИГНАЛА ====================
+window.cancelActiveSignal = function() {
+  if (!store.getActiveSignal()) return;
+
+  // Останавливаем таймер
+  if (activeTimerInterval) {
+    clearInterval(activeTimerInterval);
+    activeTimerInterval = null;
+  }
+
+  // Очищаем активный сигнал
+  store.setActiveSignal(null);
+
+  // Скрываем основной блок сигнала
+  const displayBox = document.getElementById('activeSignalDisplay');
+  if (displayBox) displayBox.style.display = 'none';
+
+  // Включаем кнопку генерации
+  const genBtn = document.getElementById('generateSignalBtn');
+  if (genBtn) genBtn.disabled = false;
+
+  // Сбрасываем мини-панель
+  const miniBox = document.getElementById('miniSignalBox');
+  const miniGen = document.getElementById('miniGenerateBtn');
+  const miniResultRow = document.getElementById('miniResultRow');
+  if (miniBox) miniBox.style.display = 'none';
+  if (miniGen) miniGen.disabled = false;
+  if (miniResultRow) miniResultRow.style.display = 'none';
+
+  // Обновляем интерфейс
+  renderUI();
+};
