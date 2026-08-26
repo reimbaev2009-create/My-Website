@@ -1,22 +1,39 @@
-// store.js - State Engine (v3.1 с поддержкой 30s/1m таймфреймов, REFUND, сброса и аналитики)
-const STORAGE_KEY = 'BEYBARS_BOT_STATE_V3';
+// store.js - State Engine (v3.2 - Multi-User Support)
+// Mevcut tüm fonksiyonlar korundu. Sadece kullanıcı bazlı storage eklendi.
+
+const BASE_STORAGE_KEY = 'BEYBARS_BOT_STATE_V3';
 
 const defaultState = {
-  activeSignal: null, // { id, asset, timeframe, type, entry, confidence, generatedAt, expirationAt, status, factors, analysisSnapshot }
+  activeSignal: null,
   signalsHistory: [],
-  dailySessions: [],  // { id, date, displayDate, trades, wins, losses, refunds, winRate, pnl }
+  dailySessions: [],
   selectedAsset: 'EUR/USD OTC',
-  selectedTimeframe: '30s' // По умолчанию включен быстрый таймфрейм 30s
+  selectedTimeframe: '30s'
 };
 
 class AppStore {
   constructor() {
+    this.currentUser = null; // auth.js tarafından set edilecek
+    this.state = { ...defaultState };
+  }
+
+  // Kullanıcı değiştirildiğinde çağrılır
+  setUser(username) {
+    this.currentUser = username || null;
     this.state = this.loadState();
+  }
+
+  getStorageKey() {
+    if (!this.currentUser) return BASE_STORAGE_KEY + '_GUEST';
+    // Kullanıcı adına özel key (güvenli karakter)
+    const safeName = this.currentUser.replace(/[^a-zA-Z0-9_-]/g, '_').toLowerCase();
+    return `${BASE_STORAGE_KEY}_${safeName}`;
   }
 
   loadState() {
     try {
-      const saved = localStorage.getItem(STORAGE_KEY);
+      const key = this.getStorageKey();
+      const saved = localStorage.getItem(key);
       if (!saved) return { ...defaultState };
       const parsed = JSON.parse(saved);
       return { ...defaultState, ...parsed };
@@ -28,7 +45,8 @@ class AppStore {
 
   saveState() {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(this.state));
+      const key = this.getStorageKey();
+      localStorage.setItem(key, JSON.stringify(this.state));
     } catch (e) {
       console.error("Ошибка записи в localStorage", e);
     }
@@ -66,7 +84,6 @@ class AppStore {
   }
 
   addSignalToHistory(signal) {
-    // Предотвращение дубликатов по ID
     const exists = this.state.signalsHistory.some(s => s.id === signal.id);
     if (!exists) {
       this.state.signalsHistory.unshift(signal);
@@ -77,7 +94,6 @@ class AppStore {
     this.saveState();
   }
 
-  // Очистка истории сигналов
   resetSignalsHistory() {
     this.state.signalsHistory = [];
     this.state.activeSignal = null;
@@ -85,7 +101,6 @@ class AppStore {
   }
 
   resolveSignalResult(signalId, result) {
-    // Нормализация результатов: WIN, LOSS, REFUND (RETURN -> REFUND)
     const normalizedResult = (result === 'RETURN') ? 'REFUND' : result;
 
     if (this.state.activeSignal && this.state.activeSignal.id === signalId) {
@@ -111,7 +126,6 @@ class AppStore {
     const losses = completed.filter(s => s.result === 'LOSS').length;
     const refunds = completed.filter(s => s.result === 'REFUND').length;
     
-    // Чистый Win Rate без учета возвратов
     const effectiveTotal = wins + losses;
     const winRate = effectiveTotal > 0 ? ((wins / effectiveTotal) * 100).toFixed(2) : "0.00";
 
@@ -142,7 +156,7 @@ class AppStore {
   }
 
   getTodayStats() {
-    const todayStr = new Date().toLocaleDateString('en-CA'); // Формат YYYY-MM-DD в локальном часовом поясе
+    const todayStr = new Date().toLocaleDateString('en-CA');
     const todayCompleted = this.state.signalsHistory.filter(s => {
       if (!s.generatedAt) return false;
       const dateStr = new Date(s.generatedAt).toLocaleDateString('en-CA');

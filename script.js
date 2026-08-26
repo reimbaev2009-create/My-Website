@@ -1167,3 +1167,5 @@ function checkAssetLimit(asset) {
     showAssetLimitModal(asset);
   }
 }
+// Auth sistemi için renderUI'yi global yap
+window.renderUI = renderUI;
