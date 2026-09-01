@@ -1,4 +1,4 @@
-// analysis/candleDetector.js — улучшенная детекция всех видимых свечей (гистограмма + адаптивная ширина)
+// analysis/candleDetector.js — максимально чувствительная детекция всех видимых свечей
 
 export class CandleDetector {
   static extractCandles(detectionData) {
@@ -12,213 +12,226 @@ export class CandleDetector {
       ...redPixels.map(p => ({ ...p, isBullish: false }))
     ];
 
-    if (allPixels.length < 8) return [];
+    if (allPixels.length < 10) return [];
 
-    // ===== 1. Строим гистограмму по X =====
-    const hist = new Array(width).fill(0);
-    const colorHist = new Array(width).fill(0); // >0 зелёный, <0 красный
+    // ===== 1. Гистограмма по X =====
+    const hist = new Float32Array(width);
+    const bullHist = new Float32Array(width);
+    const bearHist = new Float32Array(width);
 
-    allPixels.forEach(p => {
+    for (const p of allPixels) {
       const x = Math.max(0, Math.min(width - 1, Math.round(p.x)));
       hist[x]++;
-      colorHist[x] += p.isBullish ? 1 : -1;
-    });
-
-    // ===== 2. Сглаживаем гистограмму =====
-    const smoothed = new Array(width).fill(0);
-    const smoothRadius = 2;
-    for (let x = 0; x < width; x++) {
-      let sum = 0, count = 0;
-      for (let dx = -smoothRadius; dx <= smoothRadius; dx++) {
-        const nx = x + dx;
-        if (nx >= 0 && nx < width) {
-          sum += hist[nx];
-          count++;
-        }
-      }
-      smoothed[x] = sum / count;
+      if (p.isBullish) bullHist[x]++;
+      else bearHist[x]++;
     }
 
-    // ===== 3. Находим пики (центры свечей) =====
-    const peaks = [];
-    const minPeakHeight = Math.max(3, Math.floor(allPixels.length / (width * 0.8) * 4)); // адаптивный порог
+    // ===== 2. Лёгкое сглаживание =====
+    const smoothed = new Float32Array(width);
+    for (let x = 0; x < width; x++) {
+      let sum = 0;
+      let cnt = 0;
+      for (let d = -1; d <= 1; d++) {
+        const nx = x + d;
+        if (nx >= 0 && nx < width) {
+          sum += hist[nx];
+          cnt++;
+        }
+      }
+      smoothed[x] = sum / cnt;
+    }
 
-    for (let x = 2; x < width - 2; x++) {
-      if (
-        smoothed[x] >= minPeakHeight &&
-        smoothed[x] >= smoothed[x - 1] &&
-        smoothed[x] >= smoothed[x + 1] &&
-        smoothed[x] >= smoothed[x - 2] &&
-        smoothed[x] >= smoothed[x + 2]
-      ) {
-        // Проверяем, не слишком ли близко к предыдущему пику
-        if (peaks.length === 0 || x - peaks[peaks.length - 1] > 4) {
-          peaks.push(x);
+    // ===== 3. Находим ВСЕ значимые пики (очень чувствительно) =====
+    const peaks = [];
+    const minHeight = 4; // очень низкий порог
+
+    for (let x = 1; x < width - 1; x++) {
+      if (smoothed[x] >= minHeight && smoothed[x] >= smoothed[x - 1] && smoothed[x] >= smoothed[x + 1]) {
+        // не даём пикам быть слишком близко
+        if (peaks.length === 0 || x - peaks[peaks.length - 1].x >= 5) {
+          peaks.push({ x, strength: smoothed[x] });
         } else {
-          // Берём более сильный пик
-          if (smoothed[x] > smoothed[peaks[peaks.length - 1]]) {
-            peaks[peaks.length - 1] = x;
+          // оставляем более сильный
+          if (smoothed[x] > peaks[peaks.length - 1].strength) {
+            peaks[peaks.length - 1] = { x, strength: smoothed[x] };
+          }
+        }
+      }
+    }
+
+    // Если пиков слишком мало — пробуем ещё более мягкий режим
+    if (peaks.length < 8) {
+      peaks.length = 0;
+      for (let x = 1; x < width - 1; x++) {
+        if (smoothed[x] >= 3 && smoothed[x] >= smoothed[x - 1] && smoothed[x] >= smoothed[x + 1]) {
+          if (peaks.length === 0 || x - peaks[peaks.length - 1].x >= 4) {
+            peaks.push({ x, strength: smoothed[x] });
+          } else if (smoothed[x] > peaks[peaks.length - 1].strength) {
+            peaks[peaks.length - 1] = { x, strength: smoothed[x] };
           }
         }
       }
     }
 
     if (peaks.length === 0) {
-      // Fallback на старый метод, если пики не найдены
-      return this.fallbackExtract(allPixels, height, width);
+      return this.fallbackMethod(allPixels, height, width);
     }
 
-    // ===== 4. Для каждого пика собираем свечу =====
+    // ===== 4. Собираем свечи по пикам =====
     const candles = [];
-    const halfWidth = 6; // начальная полуширина поиска
 
     for (let i = 0; i < peaks.length; i++) {
-      const centerX = peaks[i];
+      const center = peaks[i].x;
 
-      // Адаптивная ширина: смотрим расстояние до соседей
-      let leftBound = i > 0 ? Math.floor((peaks[i - 1] + centerX) / 2) : Math.max(0, centerX - halfWidth);
-      let rightBound = i < peaks.length - 1 ? Math.floor((centerX + peaks[i + 1]) / 2) : Math.min(width - 1, centerX + halfWidth);
+      // Границы колонки
+      let left = i > 0 ? Math.floor((peaks[i - 1].x + center) / 2) : Math.max(0, center - 8);
+      let right = i < peaks.length - 1 ? Math.floor((center + peaks[i + 1].x) / 2) : Math.min(width - 1, center + 8);
 
-      // Собираем все пиксели в этом диапазоне
-      const columnPixels = allPixels.filter(p => p.x >= leftBound && p.x <= rightBound);
+      // Собираем пиксели этой колонки
+      const colPixels = [];
+      for (const p of allPixels) {
+        if (p.x >= left && p.x <= right) colPixels.push(p);
+      }
 
-      if (columnPixels.length < 3) continue;
+      if (colPixels.length < 4) continue;
 
       let minY = height, maxY = 0;
-      let greenCount = 0, redCount = 0;
+      let green = 0, red = 0;
 
-      columnPixels.forEach(p => {
+      for (const p of colPixels) {
         if (p.y < minY) minY = p.y;
         if (p.y > maxY) maxY = p.y;
-        if (p.isBullish) greenCount++;
-        else redCount++;
-      });
+        if (p.isBullish) green++;
+        else red++;
+      }
 
-      const isBullish = greenCount >= redCount;
-      const totalSpan = Math.max(1, maxY - minY);
+      const isBullish = green >= red;
+      const span = Math.max(1, maxY - minY);
 
-      const highPrice = Math.max(0, height - minY);
-      const lowPrice  = Math.max(0, height - maxY);
+      const high = height - minY;
+      const low = height - maxY;
 
-      const density = columnPixels.length / totalSpan;
-      const bodyRatio = Math.min(0.85, Math.max(0.25, density * 0.6));
-      const bodyLength = totalSpan * bodyRatio;
+      // Оценка тела
+      const density = colPixels.length / span;
+      const bodyRatio = Math.min(0.82, Math.max(0.22, density * 0.55));
+      const bodyLen = span * bodyRatio;
 
-      let openPrice, closePrice;
+      let open, close;
       if (isBullish) {
-        openPrice  = lowPrice + (totalSpan - bodyLength) * 0.4;
-        closePrice = openPrice + bodyLength;
+        open = low + (span - bodyLen) * 0.38;
+        close = open + bodyLen;
       } else {
-        openPrice  = highPrice - (totalSpan - bodyLength) * 0.4;
-        closePrice = openPrice - bodyLength;
+        open = high - (span - bodyLen) * 0.38;
+        close = open - bodyLen;
       }
 
       candles.push({
-        x: centerX,
-        open:  +openPrice.toFixed(2),
-        high:  +highPrice.toFixed(2),
-        low:   +lowPrice.toFixed(2),
-        close: +closePrice.toFixed(2),
+        x: center,
+        open: +open.toFixed(2),
+        high: +high.toFixed(2),
+        low: +low.toFixed(2),
+        close: +close.toFixed(2),
         isBullish,
-        bodySize: +Math.abs(closePrice - openPrice).toFixed(2),
-        wickTop: +Math.max(0, highPrice - Math.max(openPrice, closePrice)).toFixed(2),
-        wickBottom: +Math.max(0, Math.min(openPrice, closePrice) - lowPrice).toFixed(2),
-        pixelCount: columnPixels.length
+        bodySize: +Math.abs(close - open).toFixed(2),
+        wickTop: +Math.max(0, high - Math.max(open, close)).toFixed(2),
+        wickBottom: +Math.max(0, Math.min(open, close) - low).toFixed(2),
+        pixelCount: colPixels.length
       });
     }
 
-    // Сортируем слева направо и убираем совсем уж мусор
-    return candles
+    // Финальная очистка
+    const result = candles
       .sort((a, b) => a.x - b.x)
-      .filter(c => c.pixelCount >= 3 || c.bodySize > 1.5);
+      .filter(c => c.pixelCount >= 4);
+
+    console.log(`[CandleDetector] Найдено пиков: ${peaks.length} → свечей после фильтра: ${result.length}`);
+    return result;
   }
 
-  // Запасной метод (на случай если гистограмма не сработала)
-  static fallbackExtract(allPixels, height, width) {
-    const X_TOLERANCE = 3;
-    const columnsMap = new Map();
+  // Запасной метод
+  static fallbackMethod(allPixels, height, width) {
+    const TOL = 4;
+    const map = new Map();
 
-    allPixels.forEach(p => {
-      const bucketX = Math.round(p.x / X_TOLERANCE) * X_TOLERANCE;
-      if (!columnsMap.has(bucketX)) columnsMap.set(bucketX, []);
-      columnsMap.get(bucketX).push(p);
-    });
+    for (const p of allPixels) {
+      const key = Math.round(p.x / TOL) * TOL;
+      if (!map.has(key)) map.set(key, []);
+      map.get(key).push(p);
+    }
 
-    const sortedX = Array.from(columnsMap.keys()).sort((a, b) => a - b);
-    const rawCandles = [];
+    const keys = Array.from(map.keys()).sort((a, b) => a - b);
+    const raw = [];
 
-    sortedX.forEach(x => {
-      const pixels = columnsMap.get(x);
-      if (!pixels || pixels.length < 3) return;
+    for (const x of keys) {
+      const pixels = map.get(x);
+      if (pixels.length < 4) continue;
 
       let minY = height, maxY = 0;
-      let greenCount = 0, redCount = 0;
+      let green = 0, red = 0;
 
-      pixels.forEach(p => {
+      for (const p of pixels) {
         if (p.y < minY) minY = p.y;
         if (p.y > maxY) maxY = p.y;
-        if (p.isBullish) greenCount++;
-        else redCount++;
-      });
-
-      const isBullish = greenCount >= redCount;
-      const totalSpan = Math.max(1, maxY - minY);
-      const highPrice = Math.max(0, height - minY);
-      const lowPrice  = Math.max(0, height - maxY);
-
-      const density = pixels.length / totalSpan;
-      const bodyRatio = Math.min(0.85, Math.max(0.25, density * 0.6));
-      const bodyLength = totalSpan * bodyRatio;
-
-      let openPrice, closePrice;
-      if (isBullish) {
-        openPrice  = lowPrice + (totalSpan - bodyLength) * 0.4;
-        closePrice = openPrice + bodyLength;
-      } else {
-        openPrice  = highPrice - (totalSpan - bodyLength) * 0.4;
-        closePrice = openPrice - bodyLength;
+        if (p.isBullish) green++;
+        else red++;
       }
 
-      rawCandles.push({
+      const isBullish = green >= red;
+      const span = Math.max(1, maxY - minY);
+      const high = height - minY;
+      const low = height - maxY;
+
+      const bodyRatio = Math.min(0.8, Math.max(0.25, (pixels.length / span) * 0.5));
+      const bodyLen = span * bodyRatio;
+
+      let open, close;
+      if (isBullish) {
+        open = low + (span - bodyLen) * 0.4;
+        close = open + bodyLen;
+      } else {
+        open = high - (span - bodyLen) * 0.4;
+        close = open - bodyLen;
+      }
+
+      raw.push({
         x,
-        open:  +openPrice.toFixed(2),
-        high:  +highPrice.toFixed(2),
-        low:   +lowPrice.toFixed(2),
-        close: +closePrice.toFixed(2),
+        open: +open.toFixed(2),
+        high: +high.toFixed(2),
+        low: +low.toFixed(2),
+        close: +close.toFixed(2),
         isBullish,
-        bodySize: +Math.abs(closePrice - openPrice).toFixed(2),
-        wickTop: +Math.max(0, highPrice - Math.max(openPrice, closePrice)).toFixed(2),
-        wickBottom: +Math.max(0, Math.min(openPrice, closePrice) - lowPrice).toFixed(2),
+        bodySize: +Math.abs(close - open).toFixed(2),
+        wickTop: +Math.max(0, high - Math.max(open, close)).toFixed(2),
+        wickBottom: +Math.max(0, Math.min(open, close) - low).toFixed(2),
         pixelCount: pixels.length
       });
-    });
+    }
 
-    // Мягкая склейка
+    // Мягкое слияние
     const merged = [];
-    let current = rawCandles[0];
-
-    for (let i = 1; i < rawCandles.length; i++) {
-      const next = rawCandles[i];
-      if (Math.abs(next.x - current.x) <= 5) {
-        current = {
-          x: Math.round((current.x + next.x) / 2),
-          open: current.open,
-          high: Math.max(current.high, next.high),
-          low: Math.min(current.low, next.low),
-          close: next.close,
-          isBullish: next.isBullish,
-          bodySize: Math.max(current.bodySize, next.bodySize),
-          wickTop: Math.max(current.wickTop || 0, next.wickTop || 0),
-          wickBottom: Math.max(current.wickBottom || 0, next.wickBottom || 0),
-          pixelCount: (current.pixelCount || 0) + (next.pixelCount || 0)
+    let cur = raw[0];
+    for (let i = 1; i < raw.length; i++) {
+      if (raw[i].x - cur.x <= 6) {
+        cur = {
+          x: Math.round((cur.x + raw[i].x) / 2),
+          open: cur.open,
+          high: Math.max(cur.high, raw[i].high),
+          low: Math.min(cur.low, raw[i].low),
+          close: raw[i].close,
+          isBullish: raw[i].isBullish,
+          bodySize: Math.max(cur.bodySize, raw[i].bodySize),
+          wickTop: Math.max(cur.wickTop, raw[i].wickTop),
+          wickBottom: Math.max(cur.wickBottom, raw[i].wickBottom),
+          pixelCount: cur.pixelCount + raw[i].pixelCount
         };
       } else {
-        merged.push(current);
-        current = { ...next };
+        merged.push(cur);
+        cur = raw[i];
       }
     }
-    if (current) merged.push(current);
+    if (cur) merged.push(cur);
 
-    return merged.filter(c => c.pixelCount >= 3 || c.bodySize > 1.5);
+    console.log(`[CandleDetector] Fallback → ${merged.length} свечей`);
+    return merged.filter(c => c.pixelCount >= 4);
   }
 }
