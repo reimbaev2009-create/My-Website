@@ -1,4 +1,4 @@
-// analysis/candleDetector.js — сбалансированная детекция (цель: 20–45 свечей)
+// analysis/candleDetector.js — умная фильтрация: находим реальное количество свечей
 
 export class CandleDetector {
   static extractCandles(detectionData) {
@@ -12,10 +12,11 @@ export class CandleDetector {
       ...redPixels.map(p => ({ ...p, isBullish: false }))
     ];
 
-    if (allPixels.length < 30) return [];
+    if (allPixels.length < 20) return [];
 
     // ===== 1. Гистограмма =====
     const hist = new Float32Array(width);
+
     for (const p of allPixels) {
       const x = Math.max(0, Math.min(width - 1, Math.round(p.x)));
       hist[x]++;
@@ -35,81 +36,56 @@ export class CandleDetector {
       smoothed[x] = sum / cnt;
     }
 
-    // ===== 3. Средняя сила гистограммы (для адаптивного порога) =====
-    let totalStrength = 0;
-    let nonZero = 0;
-    for (let i = 0; i < width; i++) {
-      if (smoothed[i] > 0) {
-        totalStrength += smoothed[i];
-        nonZero++;
-      }
-    }
-    const avgStrength = nonZero > 0 ? totalStrength / nonZero : 5;
-    const minPeakStrength = Math.max(5, avgStrength * 0.35);
-
-    // ===== 4. Ищем пики слева направо =====
-    const peaks = [];
-    const minDist = 6; // минимальное расстояние между свечами
-
-    for (let x = 4; x < width - 4; x++) {
+    // ===== 3. Находим кандидатов в пики =====
+    const candidates = [];
+    for (let x = 3; x < width - 3; x++) {
       if (
-        smoothed[x] >= minPeakStrength &&
-        smoothed[x] >= smoothed[x - 1] &&
-        smoothed[x] >= smoothed[x + 1] &&
+        smoothed[x] > smoothed[x - 1] &&
+        smoothed[x] > smoothed[x + 1] &&
         smoothed[x] >= smoothed[x - 2] &&
         smoothed[x] >= smoothed[x + 2]
       ) {
-        // Проверяем расстояние до последнего пика
-        if (peaks.length === 0 || x - peaks[peaks.length - 1] >= minDist) {
-          peaks.push(x);
-        } else {
-          // Если новый пик сильнее — заменяем предыдущий
-          const last = peaks[peaks.length - 1];
-          if (smoothed[x] > smoothed[last]) {
-            peaks[peaks.length - 1] = x;
-          }
-        }
+        candidates.push({ x, strength: smoothed[x] });
       }
     }
 
-    // Если слишком мало — пробуем ещё мягче
-    if (peaks.length < 12) {
-      peaks.length = 0;
-      const softerMin = Math.max(3, avgStrength * 0.22);
-      for (let x = 3; x < width - 3; x++) {
-        if (
-          smoothed[x] >= softerMin &&
-          smoothed[x] >= smoothed[x - 1] &&
-          smoothed[x] >= smoothed[x + 1]
-        ) {
-          if (peaks.length === 0 || x - peaks[peaks.length - 1] >= 5) {
-            peaks.push(x);
-          } else if (smoothed[x] > smoothed[peaks[peaks.length - 1]]) {
-            peaks[peaks.length - 1] = x;
-          }
-        }
-      }
-    }
-
-    if (peaks.length === 0) {
+    if (candidates.length === 0) {
       return this.fallbackMethod(allPixels, height, width);
     }
+
+    // ===== 4. Умная фильтрация пиков =====
+    // Сортируем по силе (самые мощные сначала)
+    candidates.sort((a, b) => b.strength - a.strength);
+
+    const selected = [];
+    const minDistance = 7; // минимальное расстояние между свечами (важно!)
+
+    for (const cand of candidates) {
+      // Проверяем, не слишком ли близко к уже выбранным
+      const tooClose = selected.some(s => Math.abs(s.x - cand.x) < minDistance);
+      if (!tooClose) {
+        selected.push(cand);
+      }
+
+      // Ограничиваем максимальное количество (чтобы не было сотен)
+      if (selected.length >= 60) break;
+    }
+
+    // Сортируем слева направо
+    selected.sort((a, b) => a.x - b.x);
 
     // ===== 5. Собираем свечи =====
     const candles = [];
 
-    for (let i = 0; i < peaks.length; i++) {
-      const center = peaks[i];
+    for (let i = 0; i < selected.length; i++) {
+      const center = selected[i].x;
 
-      let left = i > 0 ? Math.floor((peaks[i - 1] + center) / 2) : Math.max(0, center - 8);
-      let right = i < peaks.length - 1 ? Math.floor((center + peaks[i + 1]) / 2) : Math.min(width - 1, center + 8);
+      // Границы колонки
+      let left = i > 0 ? Math.floor((selected[i - 1].x + center) / 2) : Math.max(0, center - 9);
+      let right = i < selected.length - 1 ? Math.floor((center + selected[i + 1].x) / 2) : Math.min(width - 1, center + 9);
 
-      const colPixels = [];
-      for (const p of allPixels) {
-        if (p.x >= left && p.x <= right) colPixels.push(p);
-      }
-
-      if (colPixels.length < 5) continue;
+      const colPixels = allPixels.filter(p => p.x >= left && p.x <= right);
+      if (colPixels.length < 6) continue;
 
       let minY = height, maxY = 0;
       let green = 0, red = 0;
@@ -123,19 +99,20 @@ export class CandleDetector {
 
       const isBullish = green >= red;
       const span = Math.max(1, maxY - minY);
+
       const high = height - minY;
       const low = height - maxY;
 
       const density = colPixels.length / span;
-      const bodyRatio = Math.min(0.78, Math.max(0.18, density * 0.5));
+      const bodyRatio = Math.min(0.80, Math.max(0.20, density * 0.52));
       const bodyLen = span * bodyRatio;
 
       let open, close;
       if (isBullish) {
-        open = low + (span - bodyLen) * 0.36;
+        open = low + (span - bodyLen) * 0.37;
         close = open + bodyLen;
       } else {
-        open = high - (span - bodyLen) * 0.36;
+        open = high - (span - bodyLen) * 0.37;
         close = open - bodyLen;
       }
 
@@ -153,9 +130,9 @@ export class CandleDetector {
       });
     }
 
-    const result = candles.filter(c => c.pixelCount >= 5);
+    const result = candles.filter(c => c.pixelCount >= 6);
 
-    console.log(`[CandleDetector] Пиков: ${peaks.length} → свечей: ${result.length} | avgStrength: ${avgStrength.toFixed(1)}`);
+    console.log(`[CandleDetector] Кандидатов: ${candidates.length} → выбрано пиков: ${selected.length} → свечей: ${result.length}`);
     return result;
   }
 
@@ -174,7 +151,7 @@ export class CandleDetector {
 
     for (const x of keys) {
       const pixels = map.get(x);
-      if (pixels.length < 5) continue;
+      if (pixels.length < 6) continue;
 
       let minY = height, maxY = 0;
       let green = 0, red = 0;
@@ -191,7 +168,7 @@ export class CandleDetector {
       const high = height - minY;
       const low = height - maxY;
 
-      const bodyRatio = Math.min(0.75, Math.max(0.2, (pixels.length / span) * 0.48));
+      const bodyRatio = Math.min(0.78, Math.max(0.22, (pixels.length / span) * 0.5));
       const bodyLen = span * bodyRatio;
 
       let open, close;
@@ -217,6 +194,7 @@ export class CandleDetector {
       });
     }
 
+    // Слияние близких
     const merged = [];
     let cur = raw[0];
     for (let i = 1; i < raw.length; i++) {
@@ -241,6 +219,6 @@ export class CandleDetector {
     if (cur) merged.push(cur);
 
     console.log(`[CandleDetector] Fallback → ${merged.length} свечей`);
-    return merged.filter(c => c.pixelCount >= 5);
+    return merged.filter(c => c.pixelCount >= 6);
   }
 }
