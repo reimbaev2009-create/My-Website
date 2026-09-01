@@ -1,4 +1,4 @@
-// analysis/candleDetector.js — максимальное количество свечей + чистая фильтрация
+// analysis/candleDetector.js — улучшенная стабильная версия
 
 export class CandleDetector {
   static extractCandles(detectionData) {
@@ -12,35 +12,41 @@ export class CandleDetector {
       ...redPixels.map(p => ({ ...p, isBullish: false }))
     ];
 
-    if (allPixels.length < 5) return [];
+    if (allPixels.length < 8) return [];
 
-    // Очень мелкий шаг → больше свечей
-    const X_TOLERANCE = 2.5;
+    // Более мелкий шаг → больше свечей
+    const X_TOLERANCE = 2;
     const columnsMap = new Map();
 
-    allPixels.forEach(p => {
+    for (let i = 0; i < allPixels.length; i++) {
+      const p = allPixels[i];
       const bucketX = Math.round(p.x / X_TOLERANCE) * X_TOLERANCE;
-      if (!columnsMap.has(bucketX)) columnsMap.set(bucketX, []);
+      if (!columnsMap.has(bucketX)) {
+        columnsMap.set(bucketX, []);
+      }
       columnsMap.get(bucketX).push(p);
-    });
+    }
 
     const sortedX = Array.from(columnsMap.keys()).sort((a, b) => a - b);
     const rawCandles = [];
 
-    sortedX.forEach(x => {
+    for (let i = 0; i < sortedX.length; i++) {
+      const x = sortedX[i];
       const pixels = columnsMap.get(x);
-      // Порог снижен до 2 пикселей
-      if (!pixels || pixels.length < 2) return;
+      if (!pixels || pixels.length < 3) continue;
 
-      let minY = height, maxY = 0;
-      let greenCount = 0, redCount = 0;
+      let minY = height;
+      let maxY = 0;
+      let greenCount = 0;
+      let redCount = 0;
 
-      pixels.forEach(p => {
+      for (let j = 0; j < pixels.length; j++) {
+        const p = pixels[j];
         if (p.y < minY) minY = p.y;
         if (p.y > maxY) maxY = p.y;
         if (p.isBullish) greenCount++;
         else redCount++;
-      });
+      }
 
       const isBullish = greenCount >= redCount;
       const totalSpan = Math.max(1, maxY - minY);
@@ -48,17 +54,16 @@ export class CandleDetector {
       const highPrice = Math.max(0, height - minY);
       const lowPrice  = Math.max(0, height - maxY);
 
-      // Более мягкая оценка тела
       const density = pixels.length / totalSpan;
-      const bodyRatio = Math.min(0.9, Math.max(0.2, density * 0.65));
+      const bodyRatio = Math.min(0.88, Math.max(0.22, density * 0.62));
       const bodyLength = totalSpan * bodyRatio;
 
       let openPrice, closePrice;
       if (isBullish) {
-        openPrice  = lowPrice + (totalSpan - bodyLength) * 0.45;
+        openPrice  = lowPrice + (totalSpan - bodyLength) * 0.42;
         closePrice = openPrice + bodyLength;
       } else {
-        openPrice  = highPrice - (totalSpan - bodyLength) * 0.45;
+        openPrice  = highPrice - (totalSpan - bodyLength) * 0.42;
         closePrice = openPrice - bodyLength;
       }
 
@@ -74,9 +79,11 @@ export class CandleDetector {
         wickBottom: +Math.max(0, Math.min(openPrice, closePrice) - lowPrice).toFixed(2),
         pixelCount: pixels.length
       });
-    });
+    }
 
-    return this.mergeAdjacentCandleColumns(rawCandles);
+    const result = this.mergeAdjacentCandleColumns(rawCandles);
+    console.log(`[CandleDetector] Сырых: ${rawCandles.length} → итого свечей: ${result.length}`);
+    return result;
   }
 
   static mergeAdjacentCandleColumns(candles) {
@@ -88,8 +95,8 @@ export class CandleDetector {
     for (let i = 1; i < candles.length; i++) {
       const next = candles[i];
 
-      // Склеиваем близкие колонки
-      if (Math.abs(next.x - current.x) <= 6) {
+      // Склеиваем только очень близкие
+      if (Math.abs(next.x - current.x) <= 4) {
         current = {
           x: Math.round((current.x + next.x) / 2),
           open: current.open,
@@ -109,7 +116,6 @@ export class CandleDetector {
     }
     merged.push(current);
 
-    // Оставляем почти всё, только совсем крошечный шум убираем
-    return merged.filter(c => c.pixelCount >= 2 || c.bodySize > 1);
+    return merged.filter(c => c.pixelCount >= 3 || c.bodySize > 1.2);
   }
 }
