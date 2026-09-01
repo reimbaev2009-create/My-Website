@@ -4,6 +4,7 @@ import { store } from './store.js';
 
 window.store = store;
 
+
 let performanceChart = null;
 let activeTimerInterval = null;
 let currentPnlMode = 'PROFIT';
@@ -11,6 +12,42 @@ let selectedExpirationTime = 30; // 30 секунд по умолчанию
 
 let screenStream = null;
 let screenVideo = null;
+
+// ===== Tesseract Worker (переиспользуемый, с защитой от зависания) =====
+let tesseractWorker = null;
+let tesseractInitPromise = null;
+
+async function getTesseractWorker() {
+  if (tesseractWorker) return tesseractWorker;
+  if (tesseractInitPromise) return tesseractInitPromise;
+
+  if (typeof Tesseract === 'undefined') return null;
+
+  tesseractInitPromise = Tesseract.createWorker('eng', 1, { logger: () => {} })
+    .then(worker => {
+      tesseractWorker = worker;
+      return worker;
+    })
+    .catch(err => {
+      console.warn('Не удалось инициализировать Tesseract worker:', err);
+      tesseractInitPromise = null;
+      return null;
+    });
+
+  return tesseractInitPromise;
+}
+
+// Оборачивает любой промис тайм-аутом, чтобы зависшая сеть/воркер
+// не блокировали UI навсегда.
+function withTimeout(promise, ms, timeoutValue = null) {
+  return new Promise((resolve) => {
+    const timer = setTimeout(() => resolve(timeoutValue), ms);
+    promise.then(
+      (val) => { clearTimeout(timer); resolve(val); },
+      (err) => { clearTimeout(timer); console.warn('withTimeout error:', err); resolve(timeoutValue); }
+    );
+  });
+}
 
 const SCAN_STEPS = [
   "INITIALIZING AI ENGINE",
@@ -27,7 +64,10 @@ document.addEventListener('DOMContentLoaded', () => {
   if (typeof lucide !== 'undefined') {
     lucide.createIcons();
   }
-  
+
+  // Прогреваем Tesseract worker заранее, чтобы не ждать этого при клике
+  getTesseractWorker();
+
   initScreenVideoElement();
   initNavigation();
   initAssetSelector();
@@ -295,7 +335,7 @@ function initSignalGenerator() {
     scannerBox.classList.add('active');
 
     try {
-      await autoDetectAsset();
+      await withTimeout(autoDetectAsset(), 9000, null);
     } catch (e) {
       console.warn("Не удалось определить актив:", e);
     }
@@ -1003,6 +1043,12 @@ async function autoDetectAsset() {
 
   if (!screenVideo || !screenVideo.videoWidth) return;
 
+  const worker = await withTimeout(getTesseractWorker(), 6000, null);
+  if (!worker) {
+    console.warn('Tesseract worker недоступен или не успел загрузиться — пропускаем автоопределение актива.');
+    return;
+  }
+
   const canvas = document.createElement('canvas');
   const ctx = canvas.getContext('2d');
 
@@ -1010,7 +1056,6 @@ async function autoDetectAsset() {
   const h = screenVideo.videoHeight;
 
   // Берём ТОЛЬКО левый верхний угол — там название актива
-  // Примерно: слева 0–35% ширины, сверху 0–12% высоты
   const cropX = 0;
   const cropY = 0;
   const cropW = Math.floor(w * 0.38);
@@ -1021,13 +1066,16 @@ async function autoDetectAsset() {
 
   ctx.drawImage(
     screenVideo,
-    cropX, cropY, cropW, cropH,   // откуда берём
-    0, 0, cropW, cropH            // куда рисуем
+    cropX, cropY, cropW, cropH,
+    0, 0, cropW, cropH
   );
 
-  const result = await Tesseract.recognize(canvas, 'eng', {
-    logger: () => {}
-  });
+  // Жёсткий тайм-аут на само распознавание — раньше здесь мог зависнуть весь флоу
+  const result = await withTimeout(worker.recognize(canvas), 8000, null);
+  if (!result) {
+    console.warn('OCR не ответил вовремя — пропускаем автоопределение актива.');
+    return;
+  }
 
   const text = (result?.data?.text || '').toUpperCase().replace(/\s+/g, ' ').trim();
   console.log('OCR Asset text:', text);
@@ -1035,11 +1083,10 @@ async function autoDetectAsset() {
   const assets = OTC_FOREX_ASSETS || [];
   let foundAsset = null;
 
-  // Ищем совпадение
   for (const asset of assets) {
     const upper = asset.toUpperCase();
     const clean = upper.replace(/\s/g, '');
-    const short = upper.split(' ')[0]; // AUD/CAD
+    const short = upper.split(' ')[0];
 
     if (
       text.includes(upper) ||
@@ -1052,7 +1099,6 @@ async function autoDetectAsset() {
     }
   }
 
-  // Дополнительная проверка популярных пар
   if (!foundAsset) {
     const pairs = ['AUD/CAD OTC', 'EUR/USD OTC', 'GBP/USD OTC', 'USD/JPY OTC', 'AUD/USD OTC', 'USD/CAD OTC', 'EUR/GBP OTC', 'GBP/JPY OTC', 'BTC/USD OTC', 'ETH/USD OTC', 'LTC/USD OTC'];
     for (const pair of pairs) {
