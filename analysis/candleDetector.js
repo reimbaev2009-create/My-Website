@@ -1,4 +1,4 @@
-// analysis/candleDetector.js — простая и стабильная версия
+// analysis/candleDetector.js — быстрая и стабильная версия
 
 export class CandleDetector {
   static extractCandles(detectionData) {
@@ -7,109 +7,131 @@ export class CandleDetector {
     const { greenPixels = [], redPixels = [], height = 0, width = 0 } = detectionData;
     if (height <= 0 || width <= 0) return [];
 
-    const allPixels = [
-      ...greenPixels.map(p => ({ ...p, isBullish: true })),
-      ...redPixels.map(p => ({ ...p, isBullish: false }))
-    ];
+    const allPixels = greenPixels.length + redPixels.length;
+    if (allPixels < 30) return [];
 
-    if (allPixels.length < 10) return [];
+    // ===== Быстрая гистограмма =====
+    const hist = new Int32Array(width);
+    const color = new Int8Array(width); // +1 зелёный, -1 красный
 
-    // Группируем пиксели по X с небольшим шагом
-    const X_TOLERANCE = 3;
-    const columnsMap = new Map();
-
-    for (const p of allPixels) {
-      const bucketX = Math.round(p.x / X_TOLERANCE) * X_TOLERANCE;
-      if (!columnsMap.has(bucketX)) {
-        columnsMap.set(bucketX, []);
+    // Обрабатываем зелёные
+    for (let i = 0; i < greenPixels.length; i++) {
+      const x = greenPixels[i].x | 0;
+      if (x >= 0 && x < width) {
+        hist[x]++;
+        color[x]++;
       }
-      columnsMap.get(bucketX).push(p);
     }
 
-    const sortedX = Array.from(columnsMap.keys()).sort((a, b) => a - b);
-    const rawCandles = [];
+    // Обрабатываем красные
+    for (let i = 0; i < redPixels.length; i++) {
+      const x = redPixels[i].x | 0;
+      if (x >= 0 && x < width) {
+        hist[x]++;
+        color[x]--;
+      }
+    }
 
-    for (const x of sortedX) {
-      const pixels = columnsMap.get(x);
-      if (!pixels || pixels.length < 4) continue;
+    // ===== Ищем колонки (свечи) =====
+    const candles = [];
+    const minPixelsInColumn = 8;
+    let i = 0;
 
+    while (i < width) {
+      // Пропускаем пустые места
+      if (hist[i] < minPixelsInColumn) {
+        i++;
+        continue;
+      }
+
+      // Нашли начало колонки — собираем её
+      let startX = i;
+      let endX = i;
+      let totalPixels = 0;
+      let greenScore = 0;
+
+      while (endX < width && hist[endX] >= 3) {
+        totalPixels += hist[endX];
+        greenScore += color[endX];
+        endX++;
+      }
+
+      const colWidth = endX - startX;
+
+      // Слишком узкая или слишком широкая — пропускаем
+      if (colWidth < 2 || colWidth > 25 || totalPixels < minPixelsInColumn) {
+        i = endX + 1;
+        continue;
+      }
+
+      // Центр колонки
+      const centerX = (startX + endX) >> 1;
+
+      // Теперь нужно найти minY и maxY этой колонки
+      // Для скорости берём приближённо через повторный проход только по этой зоне
       let minY = height;
       let maxY = 0;
-      let greenCount = 0;
-      let redCount = 0;
 
-      for (const p of pixels) {
-        if (p.y < minY) minY = p.y;
-        if (p.y > maxY) maxY = p.y;
-        if (p.isBullish) greenCount++;
-        else redCount++;
+      // Зелёные в этой зоне
+      for (let p = 0; p < greenPixels.length; p++) {
+        const px = greenPixels[p].x | 0;
+        if (px >= startX && px < endX) {
+          const py = greenPixels[p].y;
+          if (py < minY) minY = py;
+          if (py > maxY) maxY = py;
+        }
       }
 
-      const isBullish = greenCount >= redCount;
-      const totalSpan = Math.max(1, maxY - minY);
+      // Красные в этой зоне
+      for (let p = 0; p < redPixels.length; p++) {
+        const px = redPixels[p].x | 0;
+        if (px >= startX && px < endX) {
+          const py = redPixels[p].y;
+          if (py < minY) minY = py;
+          if (py > maxY) maxY = py;
+        }
+      }
 
-      const highPrice = Math.max(0, height - minY);
-      const lowPrice = Math.max(0, height - maxY);
+      if (maxY <= minY) {
+        i = endX + 1;
+        continue;
+      }
 
-      const density = pixels.length / totalSpan;
-      const bodyRatio = Math.min(0.85, Math.max(0.2, density * 0.6));
-      const bodyLength = totalSpan * bodyRatio;
+      const isBullish = greenScore >= 0;
+      const span = maxY - minY;
+      const high = height - minY;
+      const low = height - maxY;
 
-      let openPrice, closePrice;
+      const bodyRatio = Math.min(0.8, Math.max(0.25, (totalPixels / span) * 0.4));
+      const bodyLen = span * bodyRatio;
+
+      let open, close;
       if (isBullish) {
-        openPrice = lowPrice + (totalSpan - bodyLength) * 0.4;
-        closePrice = openPrice + bodyLength;
+        open = low + (span - bodyLen) * 0.4;
+        close = open + bodyLen;
       } else {
-        openPrice = highPrice - (totalSpan - bodyLength) * 0.4;
-        closePrice = openPrice - bodyLength;
+        open = high - (span - bodyLen) * 0.4;
+        close = open - bodyLen;
       }
 
-      rawCandles.push({
-        x,
-        open: +openPrice.toFixed(2),
-        high: +highPrice.toFixed(2),
-        low: +lowPrice.toFixed(2),
-        close: +closePrice.toFixed(2),
+      candles.push({
+        x: centerX,
+        open: +open.toFixed(2),
+        high: +high.toFixed(2),
+        low: +low.toFixed(2),
+        close: +close.toFixed(2),
         isBullish,
-        bodySize: +Math.abs(closePrice - openPrice).toFixed(2),
-        wickTop: +Math.max(0, highPrice - Math.max(openPrice, closePrice)).toFixed(2),
-        wickBottom: +Math.max(0, Math.min(openPrice, closePrice) - lowPrice).toFixed(2),
-        pixelCount: pixels.length
+        bodySize: +Math.abs(close - open).toFixed(2),
+        wickTop: +Math.max(0, high - Math.max(open, close)).toFixed(2),
+        wickBottom: +Math.max(0, Math.min(open, close) - low).toFixed(2),
+        pixelCount: totalPixels
       });
+
+      // Перескакиваем вперёд
+      i = endX + 2;
     }
 
-    // Склеиваем очень близкие колонки
-    if (rawCandles.length === 0) return [];
-
-    const merged = [];
-    let current = { ...rawCandles[0] };
-
-    for (let i = 1; i < rawCandles.length; i++) {
-      const next = rawCandles[i];
-
-      if (Math.abs(next.x - current.x) <= 5) {
-        current = {
-          x: Math.round((current.x + next.x) / 2),
-          open: current.open,
-          high: Math.max(current.high, next.high),
-          low: Math.min(current.low, next.low),
-          close: next.close,
-          isBullish: next.isBullish,
-          bodySize: Math.max(current.bodySize, next.bodySize),
-          wickTop: Math.max(current.wickTop || 0, next.wickTop || 0),
-          wickBottom: Math.max(current.wickBottom || 0, next.wickBottom || 0),
-          pixelCount: (current.pixelCount || 0) + (next.pixelCount || 0)
-        };
-      } else {
-        merged.push(current);
-        current = { ...next };
-      }
-    }
-    merged.push(current);
-
-    const result = merged.filter(c => c.pixelCount >= 4);
-
-    console.log(`[CandleDetector] Сырых колонок: ${rawCandles.length} → после склейки: ${result.length}`);
-    return result;
+    console.log(`[CandleDetector] Найдено свечей: ${candles.length}`);
+    return candles;
   }
 }
